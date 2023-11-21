@@ -22,6 +22,9 @@ class DotKernel {
         if (this === o)
             return; // Join is idempotent, but just dont do it.
         // DS
+        console.log("Joining DS");
+        console.log("Ds1: " + this.ds);
+        console.log("Ds2: " + o.ds);
         this.ds.forEach((val, dot) => {
             if (o.c.dotin(dot)) {
                 // other knows dot, must delete here
@@ -34,9 +37,10 @@ class DotKernel {
                 this.ds.set(dot, val);
             }
         });
+        console.log("Ds1: " + this.ds);
+        console.log("Ds2: " + o.ds);
         // CC
         this.c.join(o.c);
-        o.c = this.c;
     }
     add(id, val) {
         let res = new DotKernel();
@@ -49,15 +53,45 @@ class DotKernel {
         res.c.insertdot(dot);
         return res;
     }
-    rmv(id, val) {
+    rmv(val) {
+        let res = new DotKernel;
+        //typename  map<pair<K,int>,T>::iterator dsit;
+        for (let dsit of this.ds) {
+            if (dsit[1] == val) // match
+             {
+                res.c.insertdot(dsit[0], false); // result knows removed dots
+                this.ds.delete(dsit[0]);
+            }
+        }
+        res.c.compact(); // Maybe several dots there, so atempt compactation
+        return res;
+    }
+    // Remove a dot by its key
+    rmvDot(dot) {
         let res = new DotKernel();
-        // get new dot
-        let dot = this.c.makedot(id);
-        // remove under new dot
-        this.ds.delete(dot);
-        // make delta
-        res.ds.delete(dot);
-        res.c.insertdot(dot);
+        // Check if the dot exists in the map
+        if (this.ds.has(dot)) {
+            // Result knows removed dot
+            res.c.insertdot(dot, false);
+            // Remove the dot from the map
+            this.ds.delete(dot);
+        }
+        // Attempt compactation
+        res.c.compact();
+        return res;
+    }
+    // Remove all dots
+    rmvAll() {
+        let res = new DotKernel();
+        // Iterate over all dots in the map
+        for (let dot of this.ds.keys()) {
+            // Result knows removed dots
+            res.c.insertdot(dot, false);
+        }
+        // Attempt compactation
+        res.c.compact();
+        // Clear the map
+        this.ds.clear();
         return res;
     }
     dotadd(id, val) {

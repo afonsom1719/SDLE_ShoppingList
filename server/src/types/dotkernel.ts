@@ -22,7 +22,11 @@ interface DotKernel {
   add(id: string, val: number): DotKernel;
 
   // Define a method to remove a dot and return a delta
-  rmv(id: string, val: number): DotKernel;
+  rmv(val: number): DotKernel;
+
+  rmvDot(dot: [string, number]): DotKernel;
+
+  rmvAll() : DotKernel;
 
   // Define a method to add a new dot with a value and return the dot
   dotadd(id: string, val: number): [string, number];
@@ -55,6 +59,9 @@ class DotKernel implements DotKernel {
   join(o: DotKernel): void {
     if (this === o) return; // Join is idempotent, but just dont do it.
     // DS
+    console.log("Joining DS");
+    console.log("Ds1: " + this.ds);
+    console.log("Ds2: " + o.ds);
 
     this.ds.forEach((val, dot) => {
       if (o.c.dotin(dot)) {
@@ -70,12 +77,13 @@ class DotKernel implements DotKernel {
       }
     }
     );
-    
+    console.log("Ds1: " + this.ds);
+    console.log("Ds2: " + o.ds);
+
 
     
     // CC
     this.c.join(o.c);
-    o.c = this.c;
   }
 
   add(id: string, val: number): DotKernel {
@@ -90,17 +98,55 @@ class DotKernel implements DotKernel {
     return res;
   }
 
-  rmv(id: string, val: number): DotKernel {
-    let res = new DotKernel();
-    // get new dot
-    let dot = this.c.makedot(id);
-    // remove under new dot
-    this.ds.delete(dot);
-    // make delta
-    res.ds.delete(dot);
-    res.c.insertdot(dot);
+  rmv (val: number): DotKernel // remove all dots matching value
+  {
+    let res = new DotKernel;
+    //typename  map<pair<K,int>,T>::iterator dsit;
+    for(let dsit of this.ds) {
+      if (dsit[1] == val) // match
+      {
+      
+        res.c.insertdot(dsit[0],false); // result knows removed dots
+        this.ds.delete(dsit[0]);
+      }
+    }
+    res.c.compact(); // Maybe several dots there, so atempt compactation
     return res;
   }
+
+  // Remove a dot by its key
+rmvDot(dot: [string, number]): DotKernel {
+  let res = new DotKernel();
+  // Check if the dot exists in the map
+  if (this.ds.has(dot)) {
+    // Result knows removed dot
+    res.c.insertdot(dot, false);
+    // Remove the dot from the map
+    this.ds.delete(dot);
+  }
+  // Attempt compactation
+  res.c.compact();
+  return res;
+}
+
+// Remove all dots
+rmvAll(): DotKernel {
+  let res = new DotKernel();
+  // Iterate over all dots in the map
+  for (let dot of this.ds.keys()) {
+    // Result knows removed dots
+    res.c.insertdot(dot, false);
+  }
+  // Attempt compactation
+  res.c.compact();
+  // Clear the map
+  this.ds.clear();
+  return res;
+}
+
+
+  
+
 
   dotadd(id: string, val: number): [string, number] {
     // get new dot

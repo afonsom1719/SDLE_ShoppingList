@@ -29,34 +29,24 @@ mongoose
 	});
 
 	// Create two instances of CCounter with different ids
-let c1 = new CCounter("c1");
-let c2 = new CCounter("c2");
 
-// Increment c1 by 3 and c2 by 5
-c1.inc(3);
-c2.inc(5);
+let x = new CCounter("a");
+let y = new CCounter("b");
 
-// Print the values of c1 and c2
-console.log("c1 = " + c1.read()); // c1 = 3
-console.log("c2 = " + c2.read()); // c2 = 5
+x.inc(4);
+x.dec();
+y.dec();
 
-// Join c1 and c2
-c1.join(c2);
+console.log("x = " + x.read()); // x = 3
+console.log("y = " + y.read()); // y = -1
 
-// Print the values of c1 and c2 after joining
-console.log("c1 = " + c1.read()); // c1 = 8
-console.log("c2 = " + c2.read()); // c2 = 8
+x.join(y);
+y.join(x);
 
-// Decrement c1 by 2 and c2 by 4
-c1.dec(2);
-c2.dec(4);
+console.log("x = " + x.read()); // x = 2
+console.log("y = " + y.read()); // y = 2
 
-// Print the values of c1 and c2 after decrementing
-console.log("c1 = " + c1.read()); // c1 = 6
-console.log("c2 = " + c2.read()); // c2 = 4
+x.reset();
 
-// Reset c1
-c1.reset();
+console.log("x = " + x.read()); // x = 0
 
-// Print the value of c1 after resetting
-console.log("c1 = " + c1.read()); // c1 = 0

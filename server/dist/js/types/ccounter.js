@@ -29,11 +29,11 @@ class CCounter {
             }
         }
         for (let dot of dots)
-            r.dk.join(this.dk.rmv(dot.first, dot.second));
+            r.dk.join(this.dk.rmv(dot.second));
         r.dk.join(this.dk.add(this.id, base + val));
         return r;
     }
-    dec(val) {
+    dec(val = 1) {
         let r = new CCounter();
         let dots = new Set(); // dots to remove, should be only 1
         let base = 0; // typically 0
@@ -46,14 +46,14 @@ class CCounter {
             }
         }
         for (let dot of dots)
-            r.dk.join(this.dk.rmv(dot.first, dot.second));
+            r.dk.join(this.dk.rmv(dot.second));
         r.dk.join(this.dk.add(this.id, base - val));
         return r;
     }
     reset() {
         // Other nodes might however upgrade their counts
         let r = new CCounter();
-        r.dk = this.dk.rmv(this.id, 0);
+        r.dk = this.dk.rmvAll();
         return r;
     }
     read() {

@@ -38,12 +38,12 @@ class CCounter {
         dots.add(dot);
       }
     }
-    for (let dot of dots) r.dk.join(this.dk.rmv(dot.first, dot.second));
+    for (let dot of dots) r.dk.join(this.dk.rmv(dot.second));
     r.dk.join(this.dk.add(this.id, base + val));
     return r;
   }
 
-  dec(val: number): CCounter {
+  dec(val: number = 1): CCounter {
     let r = new CCounter();
     let dots = new Set<Pair<string, number>>(); // dots to remove, should be only 1
     let base = 0; // typically 0
@@ -54,17 +54,18 @@ class CCounter {
         let dot: Pair<string, number> = { first: this.id, second: dsit[1] };
         dots.add(dot);
       }
-      
     }
-    for (let dot of dots) r.dk.join(this.dk.rmv(dot.first, dot.second));
+    for (let dot of dots) r.dk.join(this.dk.rmv(dot.second));
     r.dk.join(this.dk.add(this.id, base - val));
+    
+
     return r;
   }
 
   reset(): CCounter {
     // Other nodes might however upgrade their counts
     let r = new CCounter();
-    r.dk = this.dk.rmv(this.id, 0);
+    r.dk = this.dk.rmvAll();
     return r;
   }
 
