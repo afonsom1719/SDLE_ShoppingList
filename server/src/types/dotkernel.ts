@@ -60,25 +60,30 @@ class DotKernel implements DotKernel {
     if (this === o) return; // Join is idempotent, but just dont do it.
     // DS
     console.log("Joining DS");
-    console.log("Ds1: " + this.ds);
-    console.log("Ds2: " + o.ds);
+    console.log("Ds1: " + this);
+    console.log("Ds2: " + o);
 
     this.ds.forEach((val, dot) => {
-      if (o.c.dotin(dot)) {
+      if (o.c.dotin(dot) && o.ds.get(dot) !== val) {
         // other knows dot, must delete here
         this.ds.delete(dot);
       }
     }
     );
+    console.log("------------------");
+    console.log("Ds1: " + this);
+    console.log("Ds2: " + o);
     o.ds.forEach((val, dot) => {
-      if (!this.c.dotin(dot)) {
+      if (!this.c.dotin(dot) && !this.ds.has(dot)) {
         // If I dont know, import
         this.ds.set(dot, val);
       }
     }
     );
-    console.log("Ds1: " + this.ds);
-    console.log("Ds2: " + o.ds);
+    console.log("------------------");
+    console.log("Ds1: " + this);
+    console.log("Ds2: " + o);
+    console.log("");
 
 
     
