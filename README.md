@@ -13,7 +13,7 @@ The client folder is a react app and the server folder is a node.js app. The ser
 - Yarn or npm
 - MongoDB
 
-## Installation steps (only guaranteed on linux ubuntu for now)
+## Installation steps
 
 1. Get into the client folder and run `yarn install` or `npm i`
 2. Then run `yarn start` or `npm start`
@@ -30,4 +30,3 @@ The recommended branch methodology is the following:
 - feature branches: for new features
 
 Feature branches should be created from dev and merged back into dev. When a new major update or feature is good and dev branch contains a stable version, dev should be merged into master/main.
-

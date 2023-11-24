@@ -1,7 +1,7 @@
 interface ITodo {
     _id: string
     name: string
-    description: string
+    quantity: number
     status: boolean
     createdAt?: string
     updatedAt?: string

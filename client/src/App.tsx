@@ -54,7 +54,7 @@ const App: React.FC = () => {
 
 	return (
 		<main className="App">
-			<h1>My Todos</h1>
+			<h1>My Shopping List</h1>
 			<AddTodo saveTodo={handleSaveTodo} />
 			{todos.map((todo: ITodo) => (
 				<TodoItem key={todo._id} updateTodo={handleUpdateTodo} deleteTodo={handleDeleteTodo} todo={todo} />

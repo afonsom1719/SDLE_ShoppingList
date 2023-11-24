@@ -21,7 +21,7 @@ export const addTodo = async (formData: ITodo): Promise<AxiosResponse<ApiDataTyp
 	try {
 		const todo: Omit<ITodo, '_id'> = {
 			name: formData.name,
-			description: formData.description,
+			quantity: formData.quantity,
 			status: false,
 		};
 		console.log(todo);

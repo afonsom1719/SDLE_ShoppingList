@@ -128,5 +128,21 @@ class DotContext {
         }
         this.compact();
     }
+    copy() {
+        // Create a new dot context
+        let copy = new DotContext();
+        // Copy the cc map
+        for (const [k, v] of this.cc) {
+            copy.cc.set(k, v);
+        }
+        // Copy the dc set
+        for (const d of this.dc) {
+            copy.dc.add(d);
+        }
+        // Compact the copied context
+        copy.compact();
+        // Return the copied context
+        return copy;
+    }
 }
 exports.DotContext = DotContext;

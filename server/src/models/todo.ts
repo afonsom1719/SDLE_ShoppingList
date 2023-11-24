@@ -8,8 +8,8 @@ const todoSchema: Schema = new Schema(
 			required: true,
 		},
 
-		description: {
-			type: String,
+			quantity: {
+			type: Number,
 			required: true,
 		},
 

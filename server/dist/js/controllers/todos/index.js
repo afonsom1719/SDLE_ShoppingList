@@ -17,10 +17,8 @@ const todo_1 = __importDefault(require("../../models/todo"));
 const getTodos = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const todos = yield todo_1.default.find();
+        console.log('getTodos: ', todos);
         res.status(200).json({ todos });
-        // res.header('Access-Control-Allow-Origin', 'http://localhost:4000');
-        // res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-        // res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     }
     catch (error) {
         throw error;
@@ -38,7 +36,7 @@ const addTodo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const todo = new todo_1.default({
             name: body.name,
-            description: body.description,
+            quantity: body.quantity,
             status: body.status,
         });
         const newTodo = yield todo.save();
