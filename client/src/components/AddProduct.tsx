@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
+import { CCounter } from '../crdts'
 
 type Props = { 
-  saveTodo: (e: React.FormEvent, formData: ITodo | any) => void 
+  saveProduct: (e: React.FormEvent, formData: ProductEntry<string, CCounter> | any) => void 
 }
 
-const AddTodo: React.FC<Props> = ({ saveTodo }) => {
-  const [formData, setFormData] = useState<ITodo | {}>()
+const AddProduct: React.FC<Props> = ({ saveProduct }) => {
+  const [formData, setFormData] = useState<ProductEntry<string, CCounter> | {}>()
 
   const handleForm = (e: React.FormEvent<HTMLInputElement>): void => {
     setFormData({
@@ -15,7 +16,7 @@ const AddTodo: React.FC<Props> = ({ saveTodo }) => {
   }
 
   return (
-    <form className='Form' onSubmit={(e) => saveTodo(e, formData)}>
+    <form className='Form' onSubmit={(e) => saveProduct(e, formData)}>
       <div>
         <div>
           <label htmlFor='name'>Name</label>
@@ -31,4 +32,4 @@ const AddTodo: React.FC<Props> = ({ saveTodo }) => {
   )
 }
 
-export default AddTodo
+export default AddProduct

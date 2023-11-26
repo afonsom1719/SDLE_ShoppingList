@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import { getTodos, addTodo, updateTodo, deleteTodo } from '../controllers/todos';
+import { getProducts, getShoppingLists, addProduct, deleteProduct } from '../controllers/products';
 
 const router: Router = Router();
 
-router.get('/todos', getTodos);
+router.post('/products', getProducts);
 
-router.post('/add-todo', addTodo);
+router.post('/add-product', addProduct);
 
-router.put('/edit-todo/:id', updateTodo);
+router.delete('/delete-product/:id', deleteProduct);
 
-router.delete('/delete-todo/:id', deleteTodo);
+router.get('/shopping-lists', getShoppingLists);
 
 export default router;

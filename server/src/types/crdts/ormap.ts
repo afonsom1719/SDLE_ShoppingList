@@ -2,15 +2,15 @@ import { DotContext } from "./dotcontext";
 import { CCounter } from "./ccounter";
 
 // Define a generic interface for the map entries
-interface MapEntry<N, V> {
+export interface ProductEntry<N, V> {
   key: N;
   value: V;
 }
 
 // Define a generic class for the ormap
-class Ormap {
+export class Ormap {
   // Use an array of MapEntry to store the map data
-  m: Array<MapEntry<string, CCounter>>;
+  m: Array<ProductEntry<string, CCounter>>;
 
   // Use the DotContext class to store the causal context
   cbase: DotContext;
@@ -139,57 +139,9 @@ class Ormap {
         this.get(kv.key).inc(kv.value.read());
       }
     });
-
-
-    // Loop until one of the maps reaches the end
-    // while (mit < this.m.length || mito < o.m.length) {
-    //   // If the current map has more entries than the other map
-    //   // or the current key is smaller than the other key
-    //   if (mit < this.m.length) {
-    //     // Entry only at here
-    //     // Create an empty value with the other context
-    //     let empty = new CCounter(this.id, o.c);
-    //     // Join the current value with the empty value
-    //     this.m[mit].value.join(empty);
-    //     // Restore the current context
-    //     this.c = ic.copy();
-    //     // Increment the current index
-    //     mit++;
-    //   }
-    //   // If the other map has more entries than the current map
-    //   // or the other key is smaller than the current key
-    //   else if (mito < o.m.length) {
-    //     // Entry only at other
-    //     // Get the other value
-    //     let ov = o.m[mito].value;
-    //     // Get the current value by key, creating a new entry if needed
-    //     let cv = this.get(o.m[mito].key);
-    //     // Join the current value with the other value
-    //     cv.join(ov);
-    //     // Restore the current context
-    //     this.c = ic.copy();
-    //     // Increment the other index
-    //     mito++;
-    //   }
-    //   // If both maps have the same key
-    //   else if (mit < this.m.length && mito < o.m.length) {
-    //     // Entry in both
-    //     // Get the other value
-    //     let ov = o.m[mito].value;
-    //     // Get the current value by key, creating a new entry if needed
-    //     let cv = this.get(o.m[mito].key);
-    //     // Join the current value with the other value
-    //     cv.join(ov);
-    //     // Restore the current context
-    //     this.c = ic.copy();
-    //     // Increment both indices
-    //     mit++;
-    //     mito++;
-    //   }
-    // }
+    
     // Join the current context with the other context
     this.c.join(o.c);
   }
 }
 
-export { Ormap };

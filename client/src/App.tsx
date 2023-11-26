@@ -1,66 +1,69 @@
 import React, { useEffect, useState } from 'react';
-import TodoItem from './components/TodoItem';
-import AddTodo from './components/AddTodo';
-import { getTodos, addTodo, updateTodo, deleteTodo } from './API';
+import ProductItem from './components/ProductItem';
+import AddProduct from './components/AddProduct';
+import { CCounter, Ormap } from './crdts';
+import { getProducts, addProduct, deleteProduct } from './API';
+import { generateRandomId } from './utils/generateId';
+import { Stack } from '@mui/material';
+import ShoppingListSelector from './components/ShoppingLists/ShoppingLists';
+const genId: string = generateRandomId();
 
 const App: React.FC = () => {
-	const [todos, setTodos] = useState<ITodo[]>([]);
+  console.log('genId: ', genId);
 
-	useEffect(() => {
-		fetchTodos();
-	}, []);
+  let productsCRDT = new Ormap(genId);
+  const [products, setProducts] = useState<ProductEntry<string, CCounter>[]>(productsCRDT.m);
 
-	const fetchTodos = (): void => {
-		getTodos()
-			.then(({ data: { todos } }: ITodo[] | any) => setTodos(todos))
-			.catch((err: Error) => console.log(err));
-	};
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-	const handleSaveTodo = (e: React.FormEvent, formData: ITodo): void => {
-		console.log(formData);
-		e.preventDefault();
-		addTodo(formData)
-			.then(({ status, data }) => {
-				console.log(data);
-				if (status !== 201) {
-					throw new Error('Error! Todo not saved');
-				}
-				setTodos(data.todos);
-			})
-			.catch((err) => console.log(err));
-	};
+  const fetchProducts = (): void => {
+    getProducts(productsCRDT)
+      .then(({ data: { Products: products } }: Ormap | any) => (productsCRDT.m = products))
+      .then(() => setProducts(productsCRDT.m))
+      .catch((err: Error) => console.log(err));
+  };
 
-	const handleUpdateTodo = (todo: ITodo): void => {
-		updateTodo(todo)
-			.then(({ status, data }) => {
-				if (status !== 200) {
-					throw new Error('Error! Todo not updated');
-				}
-				setTodos(data.todos);
-			})
-			.catch((err) => console.log(err));
-	};
+  const handleSaveProduct = (e: React.FormEvent, formData: ProductEntry<string, CCounter>): void => {
+    console.log(formData);
+    e.preventDefault();
+    addProduct(formData)
+      .then(({ status, data }) => {
+        console.log(data);
+        if (status !== 201) {
+          throw new Error('Error! Product not saved');
+        }
+        // setProducts(data.products);
+      })
+      .catch((err) => console.log(err));
+  };
 
-	const handleDeleteTodo = (_id: string): void => {
-		deleteTodo(_id)
-			.then(({ status, data }) => {
-				if (status !== 200) {
-					throw new Error('Error! Todo not deleted');
-				}
-				setTodos(data.todos);
-			})
-			.catch((err) => console.log(err));
-	};
+  const handleDeleteProduct = (_id: string): void => {
+    deleteProduct(_id)
+      .then(({ status }) => {
+        if (status !== 200) {
+          throw new Error('Error! Product not deleted');
+        }
+        // setProducts(data.products);
+      })
+      .catch((err) => console.log(err));
+  };
 
-	return (
-		<main className="App">
-			<h1>My Shopping List</h1>
-			<AddTodo saveTodo={handleSaveTodo} />
-			{todos.map((todo: ITodo) => (
-				<TodoItem key={todo._id} updateTodo={handleUpdateTodo} deleteTodo={handleDeleteTodo} todo={todo} />
-			))}
-		</main>
-	);
+  return (
+    <main className='App'>
+      <Stack direction='row' spacing={2} style={{ width: '100%' }}>
+        <ShoppingListSelector customStyle={{ flex: 1 }} />
+        <div style={{ flex: 3 }}>
+          <h1>My Shopping List</h1>
+          <AddProduct saveProduct={handleSaveProduct} />
+          {products.map((product: ProductEntry<string, CCounter>) => (
+            <ProductItem key={product.key} deleteProduct={handleDeleteProduct} product={product} />
+          ))}
+        </div>
+      </Stack>
+    </main>
+  );
 };
 
 export default App;

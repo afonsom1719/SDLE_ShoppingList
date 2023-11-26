@@ -1,20 +1,24 @@
-interface ITodo {
+// Define a generic interface for the map entries
+interface ProductEntry<N, V> {
+    key: N;
+    value: V;
+  }
+interface IProduct {
     _id: string
     name: string
     quantity: number
-    status: boolean
     createdAt?: string
     updatedAt?: string
 }
 
-type TodoProps = {
-    todo: ITodo
+type ProductProps = {
+    product: ProductEntry
 }
 
 type ApiDataType = {
     message: string
     status: string
-    todos: ITodo[]
-    todo?: ITodo
+    products: IProduct[]
+    product?: IProduct
   }
   

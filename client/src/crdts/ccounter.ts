@@ -6,7 +6,6 @@ interface Pair<A, B> {
   second: B;
 }
 
-// Causal counter, variation of Riak_dt_emcntr and lexcounter
 class CCounter {
   private dk: DotKernel; // Dot kernel
   private id: string;
@@ -31,7 +30,7 @@ class CCounter {
     let dots = new Set<Pair<string, number>>(); // dots to remove, should be only 1
     let base = 0; // typically 0
     for (let dsit of this.dk.ds) {
-      if (dsit[0][0] == this.id) {
+      if (dsit[0][0] === this.id) {
         // there should be a single one such
         base = Math.max(base, dsit[1]);
         let dot: Pair<string, number> = { first: this.id, second: dsit[1] };
@@ -48,7 +47,7 @@ class CCounter {
     let dots = new Set<Pair<string, number>>(); // dots to remove, should be only 1
     let base = 0; // typically 0
     for (let dsit of this.dk.ds) {
-      if (dsit[0][0] == this.id) {
+      if (dsit[0][0] === this.id) {
         // there should be a single one such
         base = Math.max(base, dsit[1]);
         let dot: Pair<string, number> = { first: this.id, second: dsit[1] };
