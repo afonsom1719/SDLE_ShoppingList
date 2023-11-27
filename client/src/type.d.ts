@@ -6,8 +6,8 @@ interface ProductEntry<N, V> {
   }
 
 interface ShoppingListEntry<N, V> {
-    key: N;
-    value: V;
+    name: N;
+    context: V;
     collection?: string = 'shopping-lists';
 }
 interface IProduct {

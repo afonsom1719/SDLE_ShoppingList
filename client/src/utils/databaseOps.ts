@@ -30,10 +30,14 @@ const saveShoppingList = async (shoppingList: ShoppingListEntry<string, DotConte
 const getShoppingLists = async () => {
   try {
     const response = await productDB.allDocs({ include_docs: true });
-    const shoppingLists = response.rows.map((row) => row.doc).filter((doc) => {
+
+    const shoppingLists = response.rows
+      .map((row) => row.doc)
+      .filter((doc) => {
         let newDoc = doc as IShoppingList;
-        return newDoc.collection === 'shopping-list';
-    });
+        console.log('newDoc: ', newDoc);
+        return newDoc.collection === 'shopping-lists';
+      });
 
     console.log('Shopping lists response:', shoppingLists);
     return shoppingLists;
@@ -80,4 +84,43 @@ const deleteProduct = async (productId: string) => {
   }
 };
 
-export { saveProduct, saveShoppingList, getAllProducts, getShoppingListContext, getShoppingLists, deleteProduct };
+const deleteShoppingList = async (shoppingListName: string) => {
+  try {
+    console.log('shoppingListName: ', shoppingListName);
+
+    // Use allDocs with include_docs to get all documents
+    const response = await productDB.allDocs({
+      include_docs: true,
+    });
+
+    const matchingDoc = response.rows.find((row) => {
+      const newDoc = row.doc as IShoppingList;
+      if (newDoc.name === shoppingListName) {
+        return true;
+      }
+    });
+
+    if (!matchingDoc) {
+      // Document not found
+      console.log('Shopping list not found');
+      return null;
+    }
+
+    const removeResponse = await productDB.remove(matchingDoc.doc!);
+
+    return removeResponse;
+  } catch (error) {
+    console.error('Error deleting shopping list:', error);
+    throw error;
+  }
+};
+
+export {
+  saveProduct,
+  saveShoppingList,
+  getAllProducts,
+  getShoppingListContext,
+  getShoppingLists,
+  deleteProduct,
+  deleteShoppingList,
+};

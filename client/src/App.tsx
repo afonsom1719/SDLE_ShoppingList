@@ -2,20 +2,37 @@ import React, { useEffect, useState } from 'react';
 import ProductItem from './components/ProductItem';
 import AddProduct from './components/AddProduct';
 import { CCounter, DotContext, Ormap } from './crdts';
-import { saveProduct, getAllProducts, deleteProduct, saveShoppingList, getShoppingLists } from './utils/databaseOps'; // Import PouchDB functions
+import { saveProduct, getAllProducts, deleteProduct, saveShoppingList, getShoppingLists, deleteShoppingList } from './utils/databaseOps'; // Import PouchDB functions
 import { Stack } from '@mui/material';
 import ShoppingListSelector from './components/ShoppingLists/ShoppingLists';
+import WarningModal from './components/WarningModal/WarningModal';
 
 const App: React.FC = () => {
   const [shoppingList, setShoppingList] = useState<string>('');
   const [products, setProducts] = useState<ProductEntry<string, CCounter>[]>([]);
   const [shoppingLists, setShoppingLists] = useState<string[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalWarnLevel, setModalWarnLevel] = useState('');
   let productsCRDT = new Ormap(shoppingList);
 
   useEffect(() => {
     fetchProducts();
     fetchShoppingLists();
   }, []);
+
+  const constructModalMessage = (message: string, warnLevel: string): void => {
+    setModalMessage(message);
+    setModalWarnLevel(warnLevel); 
+    setIsModalOpen(true);
+    console.log(`${warnLevel}: ${message}`);
+
+
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
 
   const fetchProducts = (): void => {
     getAllProducts()
@@ -24,14 +41,14 @@ const App: React.FC = () => {
         let mappedResponse: ProductEntry<string, CCounter>[] = response.map(
           (product: PouchDB.Core.ExistingDocument<PouchDB.Core.AllDocsMeta> | undefined) => {
             const mappedProduct = product as IProduct;
-            const mappedQuantity = productsCRDT.get(mappedProduct?._id);
+            const mappedQuantity = productsCRDT.get(mappedProduct?.name);
             return {
-              key: mappedProduct?._id,
+              key: mappedProduct?.name,
               value: mappedQuantity,
             };
           }
         );
-        console.log('Mapped response: ', mappedResponse);
+        console.log('Mapped response products: ', mappedResponse);
         if (products !== undefined) {
           productsCRDT.m = products;
           setProducts(productsCRDT.m);
@@ -57,10 +74,12 @@ const App: React.FC = () => {
         const mappedResponse: string[] = response.map(
           (shoppingList: PouchDB.Core.ExistingDocument<PouchDB.Core.AllDocsMeta> | undefined) => {
             const mappedShoppingList = shoppingList as IShoppingList;
-            return mappedShoppingList?._id;
+            return mappedShoppingList?.name;
           }
         );
         setShoppingLists(mappedResponse);
+        console.log('Mapped response shopping lists: ', mappedResponse);
+
       })
       .then(() => {
         if (shoppingList === '') {
@@ -85,6 +104,14 @@ const App: React.FC = () => {
       .catch((err: any) => console.log(err));
   };
 
+  const handleDeleteShoppingList = (shoppingListId: string): void => {
+    setShoppingList(shoppingLists[0])
+    deleteShoppingList(shoppingListId)
+      .then(() => fetchProducts())
+      .then(() => fetchShoppingLists())
+      .catch((err: any) => console.log(err));
+  }
+
   const handleShoppingListSelected = (shoppingListId: string) => {
     setShoppingList(shoppingListId);
     productsCRDT = new Ormap(shoppingListId);
@@ -95,10 +122,17 @@ const App: React.FC = () => {
   const handleAddShoppingList = (e: React.FormEvent, formData: ShoppingListEntry<string, DotContext>): void => {
     console.log('Saving shopping list:', formData);
     e.preventDefault();
-    setShoppingList(formData.key);
-    productsCRDT = new Ormap(formData.key, formData.value);
+    setShoppingList(formData.name);
+    console.log('shopping list: ', shoppingLists);
+    console.log('shopping list contains: ', shoppingLists.includes(formData.name));
+    if (shoppingLists.includes(formData.name)) {
+      constructModalMessage('Shopping list already exists!', 'warning');
+
+      return;
+    }
+    productsCRDT = new Ormap(formData.name, formData.context);
     saveShoppingList(formData)
-      .then(() => fetchProducts())
+      .then(() => fetchShoppingLists())
       .catch((err: any) => console.log(err));
   };
 
@@ -110,6 +144,7 @@ const App: React.FC = () => {
           shoppingLists={shoppingLists}
           onShoppingListSelected={handleShoppingListSelected}
           onAddShoppingList={handleAddShoppingList}
+          onDeleteShoppingList={handleDeleteShoppingList}
         />
         <div style={{ flex: 3 }}>
           <h1>My Shopping List</h1>
@@ -119,6 +154,7 @@ const App: React.FC = () => {
           ))}
         </div>
       </Stack>
+      <WarningModal isOpen={isModalOpen} onClose={closeModal} message={modalMessage} level={modalWarnLevel} />
     </main>
   );
 };

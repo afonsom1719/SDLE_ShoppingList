@@ -3,12 +3,14 @@ import React, { CSSProperties } from 'react';
 import { Button } from '@material-ui/core';
 import AddShoppingList from './AddShoppingList';
 import { DotContext } from '../../crdts';
+import TrashButton from '../TrashButton/TrashButton';
 
 interface ShoppingListSelectorProps {
   customStyle: CSSProperties;
   shoppingLists: string[];
   onShoppingListSelected: (shoppingListId: string) => void;
   onAddShoppingList: (e: React.FormEvent, formData: ShoppingListEntry<string, DotContext>) => void;
+  onDeleteShoppingList: (shoppingListId: string) => void;
 }
 
 const ShoppingListSelector = ({
@@ -16,6 +18,7 @@ const ShoppingListSelector = ({
   shoppingLists,
   onShoppingListSelected,
   onAddShoppingList,
+  onDeleteShoppingList,
 }: ShoppingListSelectorProps) => {
 
   // useEffect(() => {
@@ -40,6 +43,10 @@ const ShoppingListSelector = ({
     console.log('selected shopping list: ', shoppingListId);
   };
 
+  const handleDeleteShoppingList = (shoppingListId: string) => {
+    onDeleteShoppingList(shoppingListId);
+  }
+
   return (
     <div style={customStyle}>
       <h1>Select a shopping list</h1>
@@ -53,6 +60,7 @@ const ShoppingListSelector = ({
             >
               {shoppingList}
             </Button>
+            <TrashButton onClick={() => handleDeleteShoppingList(shoppingList)} />
           </li>
         ))}
       </ul>
