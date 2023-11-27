@@ -13,6 +13,12 @@ body {
     background: #333;
 }
 
+h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+}
+
 .App {
     max-width: 80vw;
     margin: 4rem auto;
@@ -61,6 +67,7 @@ body {
     padding: 1rem;
     background: #444;
     margin-bottom: 1rem;
+    border-radius: 20px;
 }
 
 .Form > div {
@@ -78,6 +85,9 @@ body {
     margin: 0.3rem 1rem 0 0;
 }
 
+.customList{
+    margin-bottom: 60px;
+  }
 
 .Form button {
     background: #ff9900;
