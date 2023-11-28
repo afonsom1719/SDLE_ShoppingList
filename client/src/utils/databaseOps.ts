@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import { CCounter, DotContext } from '../crdts';
+import { generateRandomId } from './generateId';
 
 const productDB = new PouchDB('products');
 
@@ -7,7 +8,21 @@ const productDB = new PouchDB('products');
 const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingListName: string) => {
   try {
     product.collection = 'products';
+    product.shoppingListId = shoppingListName;
+
     console.log('product: ', product.key);
+    if (product.key === '') {
+      throw new Error('Product key cannot be empty');
+    }
+
+    // Convert product to IProduct
+    const productToSave: IProduct = {
+      _id: generateRandomId(),
+      key: product.key,
+      value: product.value.read(),
+      collection: product.collection,
+      shoppingListId: product.shoppingListId,
+    };
 
     // Use allDocs with include_docs to get all documents
     const response = await productDB.allDocs({
@@ -29,22 +44,34 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
     if (!matchingDoc) {
       // Document not found
       console.log('Product not found');
-      const responsePost = await productDB.post(product);
+      if (productToSave.value <= 0) {
+        throw new Error('Product quantity must be greater than 0');
+      }
+      const responsePost = await productDB.post(productToSave);
       return responsePost;
     }
     const matchingDocProduct = matchingDoc.doc as IProduct;
+    productToSave._rev = matchingDocProduct._rev;
+    productToSave._id = matchingDocProduct._id;
     const currentQuantity = matchingDocProduct.value;
     console.log('currentQuantity: ', currentQuantity);
-    console.log('product.value: ', product);
-    const newQuantity: CCounter = product.value;
+    console.log('product.value: ', productToSave);
+    const newQuantity: number = productToSave.value;
     console.log('newQuantity: ', newQuantity);
-    product.value.inc(currentQuantity);
+    productToSave.value = currentQuantity + newQuantity;
 
-    if (product.value.read() <= 0) {
+    if (productToSave.value <= 0) {
       const removeResponse = await productDB.remove(matchingDoc.doc!);
       return removeResponse;
     } else {
-      const responsePost = await productDB.post(product);
+      const responsePost = await productDB.put({
+        _id: matchingDocProduct._id,
+        _rev: matchingDocProduct._rev,
+        key: productToSave.key,
+        value: productToSave.value,
+        collection: productToSave.collection,
+        shoppingListId: productToSave.shoppingListId,
+      });
       return responsePost;
     }
   } catch (error) {

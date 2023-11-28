@@ -33,7 +33,7 @@ const App: React.FC = () => {
     if (!isInitialRender.current) {
       // This block will run after the first render
       if (shoppingLists.length === 0) {
-        addFirstShoppingList(shoppingList);
+        addFirstShoppingList("My Shopping List");
         fetchShoppingLists();
       }
     } else {
@@ -118,7 +118,7 @@ const App: React.FC = () => {
   };
 
   const handleSaveProduct = (e: React.FormEvent, formData: ProductEntry<string, CCounter>): void => {
-    console.log(formData);
+    console.log("Form data value: ", formData.value.read());
     formData.shoppingListId = shoppingList;
     e.preventDefault();
     saveProduct(formData, shoppingList)
