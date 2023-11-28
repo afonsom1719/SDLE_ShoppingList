@@ -4,11 +4,49 @@ import { CCounter, DotContext } from '../crdts';
 const productDB = new PouchDB('products');
 
 // Function to save a product
-const saveProduct = async (product: ProductEntry<string, CCounter>) => {
+const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingListName: string) => {
   try {
     product.collection = 'products';
-    const response = await productDB.post(product);
-    return response;
+    console.log('product: ', product.key);
+
+    // Use allDocs with include_docs to get all documents
+    const response = await productDB.allDocs({
+      include_docs: true,
+    });
+
+    const matchingDoc = response.rows.find((row) => {
+      const newDoc = row.doc as IProduct;
+      console.log('newDoc: ', newDoc);
+      if (
+        newDoc.key === product.key &&
+        newDoc.collection === 'products' &&
+        newDoc.shoppingListId === shoppingListName
+      ) {
+        return true;
+      }
+    });
+
+    if (!matchingDoc) {
+      // Document not found
+      console.log('Product not found');
+      const responsePost = await productDB.post(product);
+      return responsePost;
+    }
+    const matchingDocProduct = matchingDoc.doc as IProduct;
+    const currentQuantity = matchingDocProduct.value;
+    console.log('currentQuantity: ', currentQuantity);
+    console.log('product.value: ', product);
+    const newQuantity: CCounter = product.value;
+    console.log('newQuantity: ', newQuantity);
+    product.value.inc(currentQuantity);
+
+    if (product.value.read() <= 0) {
+      const removeResponse = await productDB.remove(matchingDoc.doc!);
+      return removeResponse;
+    } else {
+      const responsePost = await productDB.post(product);
+      return responsePost;
+    }
   } catch (error) {
     console.error('Error saving product:', error);
     throw error;
@@ -19,6 +57,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>) => {
 const saveShoppingList = async (shoppingList: ShoppingListEntry<string, DotContext>) => {
   try {
     shoppingList.collection = 'shopping-lists';
+
     const response = await productDB.post(shoppingList);
     return response;
   } catch (error) {
@@ -76,7 +115,7 @@ const getAllProducts = async (shoppingListId: string) => {
 };
 
 // Function to delete a product
-const deleteProduct = async (productId: string) => {
+const deleteProduct = async (productId: string, shoppingListName: string) => {
   try {
     console.log('product: ', productId);
 
@@ -88,7 +127,7 @@ const deleteProduct = async (productId: string) => {
     const matchingDoc = response.rows.find((row) => {
       const newDoc = row.doc as IProduct;
       console.log('newDoc: ', newDoc);
-      if (newDoc.key === productId && newDoc.collection === 'products') {
+      if (newDoc.key === productId && newDoc.collection === 'products' && newDoc.shoppingListId === shoppingListName) {
         return true;
       }
     });

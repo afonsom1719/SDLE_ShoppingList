@@ -121,13 +121,13 @@ const App: React.FC = () => {
     console.log(formData);
     formData.shoppingListId = shoppingList;
     e.preventDefault();
-    saveProduct(formData)
+    saveProduct(formData, shoppingList)
       .then(() => fetchProducts())
       .catch((err: any) => console.log(err));
   };
 
   const handleDeleteProduct = (productId: string): void => {
-    deleteProduct(productId)
+    deleteProduct(productId, shoppingList)
       .then(() => fetchProducts())
       .catch((err: any) => console.log(err));
   };

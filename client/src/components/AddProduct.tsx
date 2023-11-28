@@ -11,7 +11,7 @@ const AddProduct: React.FC<Props> = ({ saveProduct }) => {
   const handleForm = (e: React.FormEvent<HTMLInputElement>): void => {
     setFormData({
       ...formData,
-      [e.currentTarget.id]: e.currentTarget.value,
+      [e.currentTarget.id]: new CCounter(e.currentTarget.id).inc(parseInt(e.currentTarget.value)),
     })
   }
 
