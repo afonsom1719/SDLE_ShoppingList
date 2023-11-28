@@ -8,6 +8,7 @@ import TrashButton from '../TrashButton/TrashButton';
 interface ShoppingListSelectorProps {
   customStyle: CSSProperties;
   shoppingLists: string[];
+  currentShoppingList: string;
   onShoppingListSelected: (shoppingListId: string) => void;
   onAddShoppingList: (e: React.FormEvent, formData: ShoppingListEntry<string, DotContext>) => void;
   onDeleteShoppingList: (shoppingListId: string) => void;
@@ -16,6 +17,7 @@ interface ShoppingListSelectorProps {
 const ShoppingListSelector = ({
   customStyle,
   shoppingLists,
+  currentShoppingList,
   onShoppingListSelected,
   onAddShoppingList,
   onDeleteShoppingList,
@@ -55,7 +57,7 @@ const ShoppingListSelector = ({
           <li key={shoppingList}>
             <Button
               variant='contained'
-              style={{ borderRadius: '10px' }}
+              style={currentShoppingList !== shoppingList ? { borderRadius: '10px' } : {borderRadius: '10px', backgroundColor: '#ff9900', color: 'white'}}
               onClick={() => handleSelectShoppingList(shoppingList)}
             >
               {shoppingList}

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-// import ProductItem from './components/ProductItem';
+import ProductItem from './components/ProductItem';
 import AddProduct from './components/AddProduct';
 import { CCounter, DotContext, Ormap } from './crdts';
 import {
   saveProduct,
   getAllProducts,
-  // deleteProduct,
+  deleteProduct,
   saveShoppingList,
   getShoppingLists,
   deleteShoppingList,
@@ -13,10 +13,11 @@ import {
 import { Stack } from '@mui/material';
 import ShoppingListSelector from './components/ShoppingLists/ShoppingLists';
 import WarningModal from './components/WarningModal/WarningModal';
+import { convertToProductEntry } from './utils/typeConversion';
 
 const App: React.FC = () => {
-  const [shoppingList, setShoppingList] = useState<string>('My First Shopping List');
-  // const [products, setProducts] = useState<ProductEntry<string, CCounter>[]>([]);
+  const [shoppingList, setShoppingList] = useState<string>('');
+  const [products, setProducts] = useState<ProductEntry<string, CCounter>[]>([]);
   const [shoppingLists, setShoppingLists] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
@@ -44,8 +45,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
-  }
-  , [shoppingList]);
+  }, [shoppingList]);
 
   const constructModalMessage = (message: string, warnLevel: string): void => {
     setModalMessage(message);
@@ -68,20 +68,20 @@ const App: React.FC = () => {
   const fetchProducts = (): void => {
     console.log('fetching products: ', shoppingList);
     getAllProducts(shoppingList)
-      // .then((response) => {
-      //   // console.log('Received response: ', response);
-      //   // let mappedResponse: ProductEntry<string, CCounter>[] = response.map((product) => {
-          
-      //   //   return product;
-      //   // });
+      .then((response) => {
+        console.log('Received response: ', response);
+        let mappedResponse: ProductEntry<string, CCounter>[] = response.map((product) => {
+          const mappedProduct = convertToProductEntry(product);
+          return mappedProduct;
+        });
 
-      //   // console.log('Mapped response products: ', mappedResponse);
+        console.log('Mapped response products: ', mappedResponse);
 
-      //   // if (mappedResponse !== undefined) {
-      //   //   console.log('productsCRDT.m: ', mappedResponse);
-      //   //   setProducts(products);
-      //   // }
-      // })
+        if (mappedResponse !== undefined) {
+          console.log('productsCRDT.m: ', mappedResponse);
+          setProducts(mappedResponse);
+        }
+      })
       .catch((err: Error) => console.log(err));
   };
 
@@ -105,15 +105,15 @@ const App: React.FC = () => {
             return mappedShoppingList?.name;
           }
         );
+        console.log('shopping list state:', shoppingList);
+        if (shoppingList === '' || shoppingList === undefined || shoppingList === null) {
+          setShoppingList(mappedResponse[0]);
+          productsCRDT = new Ormap(mappedResponse[0]);
+        }
         setShoppingLists(mappedResponse);
         console.log('Mapped response shopping lists: ', mappedResponse);
       })
-      .then(() => {
-        if (shoppingList === '') {
-          setShoppingList(shoppingLists[0]);
-          productsCRDT = new Ormap(shoppingLists[0]);
-        }
-      })
+      .then(() => {})
       .catch((err: Error) => console.log(err));
   };
 
@@ -126,11 +126,11 @@ const App: React.FC = () => {
       .catch((err: any) => console.log(err));
   };
 
-  // const handleDeleteProduct = (productId: string): void => {
-  //   deleteProduct(productId)
-  //     .then(() => fetchProducts())
-  //     .catch((err: any) => console.log(err));
-  // };
+  const handleDeleteProduct = (productId: string): void => {
+    deleteProduct(productId)
+      .then(() => fetchProducts())
+      .catch((err: any) => console.log(err));
+  };
 
   const handleDeleteShoppingList = (shoppingListId: string): void => {
     setShoppingList(shoppingLists[0]);
@@ -168,6 +168,7 @@ const App: React.FC = () => {
         <ShoppingListSelector
           customStyle={{ flex: 1 }}
           shoppingLists={shoppingLists}
+          currentShoppingList={shoppingList}
           onShoppingListSelected={handleShoppingListSelected}
           onAddShoppingList={handleAddShoppingList}
           onDeleteShoppingList={handleDeleteShoppingList}
@@ -175,9 +176,12 @@ const App: React.FC = () => {
         <div style={{ flex: 3 }}>
           <h1>My Shopping List</h1>
           <AddProduct saveProduct={handleSaveProduct} />
-          {/* {products.map((product: ProductEntry<string, CCounter>) => (
-            <ProductItem key={product.key} deleteProduct={handleDeleteProduct} product={product} />
-          ))} */}
+          {products.map(
+            (product: ProductEntry<string, CCounter>) => (
+              console.log('product: ', product),
+              (<ProductItem key={product.key} deleteProduct={handleDeleteProduct} product={product} />)
+            )
+          )}
         </div>
       </Stack>
       <WarningModal isOpen={isModalOpen} onClose={closeModal} message={modalMessage} level={modalWarnLevel} />

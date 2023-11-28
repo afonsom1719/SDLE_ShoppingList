@@ -59,28 +59,49 @@ const getShoppingListContext = async (shoppingListId: string) => {
 
 // Function to get all products
 const getAllProducts = async (shoppingListId: string) => {
-    try {
-      const response = await productDB.allDocs({ include_docs: true });
-      console.log(
-        'response: ',
-        response.rows.map((row) => row.doc)
-      );
-  
-      return response.rows
-        .map((row) => row.doc as IProduct)
-        .filter((doc) => doc.collection === 'products' && doc.shoppingListId === shoppingListId);
-    } catch (error) {
-      console.error('Error getting products:', error);
-      throw error;
-    }
-  };
+  try {
+    const response = await productDB.allDocs({ include_docs: true });
+    console.log(
+      'response: ',
+      response.rows.map((row) => row.doc)
+    );
+
+    return response.rows
+      .map((row) => row.doc as IProduct)
+      .filter((doc) => doc.collection === 'products' && doc.shoppingListId === shoppingListId);
+  } catch (error) {
+    console.error('Error getting products:', error);
+    throw error;
+  }
+};
 
 // Function to delete a product
 const deleteProduct = async (productId: string) => {
   try {
-    const product = await productDB.get(productId);
-    const response = await productDB.remove(product);
-    return response;
+    console.log('product: ', productId);
+
+    // Use allDocs with include_docs to get all documents
+    const response = await productDB.allDocs({
+      include_docs: true,
+    });
+
+    const matchingDoc = response.rows.find((row) => {
+      const newDoc = row.doc as IProduct;
+      console.log('newDoc: ', newDoc);
+      if (newDoc.key === productId && newDoc.collection === 'products') {
+        return true;
+      }
+    });
+
+    if (!matchingDoc) {
+      // Document not found
+      console.log('Product not found');
+      return null;
+    }
+
+    const removeResponse = await productDB.remove(matchingDoc.doc!);
+
+    return removeResponse;
   } catch (error) {
     console.error('Error deleting product:', error);
     throw error;
@@ -98,7 +119,7 @@ const deleteShoppingList = async (shoppingListName: string) => {
 
     const matchingDoc = response.rows.find((row) => {
       const newDoc = row.doc as IShoppingList;
-      if (newDoc.name === shoppingListName) {
+      if (newDoc.name === shoppingListName && newDoc.collection === 'shopping-lists') {
         return true;
       }
     });
@@ -109,11 +130,42 @@ const deleteShoppingList = async (shoppingListName: string) => {
       return null;
     }
 
+    deleteAllProductsOfShoppingList(shoppingListName);
+
     const removeResponse = await productDB.remove(matchingDoc.doc!);
 
     return removeResponse;
   } catch (error) {
     console.error('Error deleting shopping list:', error);
+    throw error;
+  }
+};
+
+const deleteAllProductsOfShoppingList = async (shoppingListId: string) => {
+  try {
+    // Use allDocs with include_docs to get all documents
+    const response = await productDB.allDocs({
+      include_docs: true,
+    });
+
+    const matchingDocs = response.rows.filter((row) => {
+      const newDoc = row.doc as IProduct;
+      if (newDoc.shoppingListId === shoppingListId && newDoc.collection === 'products') {
+        return true;
+      }
+    });
+
+    if (!matchingDocs) {
+      // Document not found
+      console.log('Shopping list not found');
+      return null;
+    }
+
+    const removeResponse = await Promise.all(matchingDocs.map((doc) => productDB.remove(doc.doc!)));
+
+    return removeResponse;
+  } catch (error) {
+    console.error('Error deleting product:', error);
     throw error;
   }
 };

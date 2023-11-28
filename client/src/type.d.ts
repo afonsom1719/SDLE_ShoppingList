@@ -14,8 +14,8 @@ interface ShoppingListEntry<N, V> {
 interface IProduct {
     _id: string
     _rev?: string
-    name: string
-    quantity: number
+    key: string
+    value: number
     createdAt?: string
     updatedAt?: string
     shoppingListId?: string;
@@ -33,7 +33,7 @@ interface IShoppingList {
 }
 
 type ProductProps = {
-    product: IProduct
+    product: ProductEntry<string, CCounter>
 }
 
 type ApiDataType = {
