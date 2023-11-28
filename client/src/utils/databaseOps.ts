@@ -58,19 +58,22 @@ const getShoppingListContext = async (shoppingListId: string) => {
 };
 
 // Function to get all products
-const getAllProducts = async () => {
-  try {
-    const response = await productDB.allDocs({ include_docs: true });
-    console.log(
-      'response: ',
-      response.rows.map((row) => row.doc)
-    );
-    return response.rows.map((row) => row.doc);
-  } catch (error) {
-    console.error('Error getting products:', error);
-    throw error;
-  }
-};
+const getAllProducts = async (shoppingListId: string) => {
+    try {
+      const response = await productDB.allDocs({ include_docs: true });
+      console.log(
+        'response: ',
+        response.rows.map((row) => row.doc)
+      );
+  
+      return response.rows
+        .map((row) => row.doc as IProduct)
+        .filter((doc) => doc.collection === 'products' && doc.shoppingListId === shoppingListId);
+    } catch (error) {
+      console.error('Error getting products:', error);
+      throw error;
+    }
+  };
 
 // Function to delete a product
 const deleteProduct = async (productId: string) => {

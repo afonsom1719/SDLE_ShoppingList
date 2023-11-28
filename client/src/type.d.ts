@@ -2,6 +2,7 @@
 interface ProductEntry<N, V> {
     key: N;
     value: V;
+    shoppingListId?: string;
     collection?: string = 'products';
   }
 
@@ -17,6 +18,7 @@ interface IProduct {
     quantity: number
     createdAt?: string
     updatedAt?: string
+    shoppingListId?: string;
     collection: string = 'products'
 }
 
@@ -31,7 +33,7 @@ interface IShoppingList {
 }
 
 type ProductProps = {
-    product: ProductEntry
+    product: IProduct
 }
 
 type ApiDataType = {
