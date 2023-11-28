@@ -1,20 +1,45 @@
-interface ITodo {
+// Define a generic interface for the map entries
+interface ProductEntry<N, V> {
+    key: N;
+    value: V;
+    shoppingListId?: string;
+    collection?: string = 'products';
+  }
+
+interface ShoppingListEntry<N, V> {
+    name: N;
+    context: V;
+    collection?: string = 'shopping-lists';
+}
+interface IProduct {
     _id: string
-    name: string
-    description: string
-    status: boolean
+    _rev?: string
+    key: string
+    value: number
     createdAt?: string
     updatedAt?: string
+    shoppingListId?: string;
+    collection: string = 'products'
 }
 
-type TodoProps = {
-    todo: ITodo
+interface IShoppingList {
+    _id: string
+    _rev?: string
+    name: string
+    context: DotContext
+    createdAt?: string
+    updatedAt?: string
+    collection: string = 'shopping-lists'
+}
+
+type ProductProps = {
+    product: ProductEntry<string, CCounter>
 }
 
 type ApiDataType = {
     message: string
     status: string
-    todos: ITodo[]
-    todo?: ITodo
+    products: IProduct[]
+    product?: IProduct
   }
   
