@@ -1,14 +1,79 @@
 import PouchDB from 'pouchdb';
 import { CCounter, DotContext } from '../crdts';
+import { generateRandomId } from './generateId';
 
 const productDB = new PouchDB('products');
 
 // Function to save a product
-const saveProduct = async (product: ProductEntry<string, CCounter>) => {
+const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingListName: string) => {
   try {
     product.collection = 'products';
-    const response = await productDB.post(product);
-    return response;
+    product.shoppingListId = shoppingListName;
+
+    console.log('product: ', product.key);
+    if (product.key === '') {
+      throw new Error('Product key cannot be empty');
+    }
+
+    // Convert product to IProduct
+    const productToSave: IProduct = {
+      _id: generateRandomId(),
+      key: product.key,
+      value: product.value.read(),
+      collection: product.collection,
+      shoppingListId: product.shoppingListId,
+    };
+
+    // Use allDocs with include_docs to get all documents
+    const response = await productDB.allDocs({
+      include_docs: true,
+    });
+
+    const matchingDoc = response.rows.find((row) => {
+      const newDoc = row.doc as IProduct;
+      console.log('newDoc: ', newDoc);
+      if (
+        newDoc.key === product.key &&
+        newDoc.collection === 'products' &&
+        newDoc.shoppingListId === shoppingListName
+      ) {
+        return true;
+      }
+    });
+
+    if (!matchingDoc) {
+      // Document not found
+      console.log('Product not found');
+      if (productToSave.value <= 0) {
+        throw new Error('Product quantity must be greater than 0');
+      }
+      const responsePost = await productDB.post(productToSave);
+      return responsePost;
+    }
+    const matchingDocProduct = matchingDoc.doc as IProduct;
+    productToSave._rev = matchingDocProduct._rev;
+    productToSave._id = matchingDocProduct._id;
+    const currentQuantity = matchingDocProduct.value;
+    console.log('currentQuantity: ', currentQuantity);
+    console.log('product.value: ', productToSave);
+    const newQuantity: number = productToSave.value;
+    console.log('newQuantity: ', newQuantity);
+    productToSave.value = currentQuantity + newQuantity;
+
+    if (productToSave.value <= 0) {
+      const removeResponse = await productDB.remove(matchingDoc.doc!);
+      return removeResponse;
+    } else {
+      const responsePost = await productDB.put({
+        _id: matchingDocProduct._id,
+        _rev: matchingDocProduct._rev,
+        key: productToSave.key,
+        value: productToSave.value,
+        collection: productToSave.collection,
+        shoppingListId: productToSave.shoppingListId,
+      });
+      return responsePost;
+    }
   } catch (error) {
     console.error('Error saving product:', error);
     throw error;
@@ -19,6 +84,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>) => {
 const saveShoppingList = async (shoppingList: ShoppingListEntry<string, DotContext>) => {
   try {
     shoppingList.collection = 'shopping-lists';
+
     const response = await productDB.post(shoppingList);
     return response;
   } catch (error) {
@@ -76,7 +142,7 @@ const getAllProducts = async (shoppingListId: string) => {
 };
 
 // Function to delete a product
-const deleteProduct = async (productId: string) => {
+const deleteProduct = async (productId: string, shoppingListName: string) => {
   try {
     console.log('product: ', productId);
 
@@ -88,7 +154,7 @@ const deleteProduct = async (productId: string) => {
     const matchingDoc = response.rows.find((row) => {
       const newDoc = row.doc as IProduct;
       console.log('newDoc: ', newDoc);
-      if (newDoc.key === productId && newDoc.collection === 'products') {
+      if (newDoc.key === productId && newDoc.collection === 'products' && newDoc.shoppingListId === shoppingListName) {
         return true;
       }
     });
