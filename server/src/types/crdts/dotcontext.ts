@@ -7,12 +7,12 @@ class DotContext {
     console.log('DotContext constructor', typeof cc,typeof dc);
     let ccLocal = cc;
     let dcLocal = dc;
-    if(typeof cc === 'string') {
-      ccLocal = JSON.parse(cc);
-    }
-    if(typeof dc === 'string') {
-      dcLocal = JSON.parse(dc);
-    }
+    // if(typeof cc === 'string') {
+    //   ccLocal = JSON.parse(cc);
+    // }
+    // if(typeof dc === 'string') {
+    //   dcLocal = JSON.parse(dc);
+    // }
     this.cc = ccLocal || new Map<string, number>();
     this.dc = dcLocal || new Set<[string, number]>();
   }
