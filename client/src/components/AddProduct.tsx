@@ -9,7 +9,6 @@ const AddProduct: React.FC<Props> = ({ saveProduct }) => {
   const [formData, setFormData] = useState<ProductEntry<string, CCounter> | {}>()
 
   const handleForm = (e: React.FormEvent<HTMLInputElement>): void => {
-    console.log('handleForm: ', e.currentTarget.id, e.currentTarget.value);
     setFormData({
       ...formData,
       [e.currentTarget.id]: (e.currentTarget.id === "key") ? e.currentTarget.value : new CCounter(e.currentTarget.id).inc(parseInt(e.currentTarget.value)),

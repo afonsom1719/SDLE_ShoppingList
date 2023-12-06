@@ -8,12 +8,11 @@ const productSchema: Schema = new Schema(
       required: true,
     },
     quantity: {
-      type: Number,
+      type: Schema.Types.Mixed,
       required: true,
     },
     shoppingList: {
-      type: Schema.Types.ObjectId,
-      ref: "ShoppingList", // Reference to the ShoppingList model
+      type: String,
       required: true,
     },
   },

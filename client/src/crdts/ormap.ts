@@ -36,16 +36,16 @@ export class Ormap {
   }
 
   // Define a method to print the ormap
-  toString(): string {
-    // Use a string variable to store the output
-    let output = "Map:" + this.c.toString() + "\n";
-    // Loop through the map entries and append them to the output
-    for (const kv of this.m) {
-      output += kv.key + "->" + kv.value + "\n";
-    }
-    // Return the output
-    return output;
-  }
+  // toString(): string {
+  //   // Use a string variable to store the output
+  //   let output = "Map:" + this.c.toString() + "\n";
+  //   // Loop through the map entries and append them to the output
+  //   for (const kv of this.m) {
+  //     output += kv.key + "->" + kv.value + "\n";
+  //   }
+  //   // Return the output
+  //   return output;
+  // }
 
   // Define a method to access the map by key
   get(n: string): CCounter {
@@ -111,11 +111,15 @@ export class Ormap {
   // Define a method to join the map with another ormap
   join(o: Ormap): void {  
 
-    console.log("Joining: ", this.toString(), " with ", o.toString());
+    console.log("Joining: ", this, " with ", o);
     //Entry at both
     this.m.forEach((kv) => {
+      console.log("Checking entry: ", this);
         if (o.m.findIndex((kv2) => kv2.key === kv.key) !== -1) {
             console.log("Entry in both: ", kv.key);
+
+            console.log("Joining values: ", kv.value, " with ", o.get(kv.key));
+            
             kv.value.join(o.get(kv.key));
         }
         });
@@ -129,6 +133,8 @@ export class Ormap {
     });
     
     // Join the current context with the other context
+    console.log("Resulting map: ", this.m);
+
     this.c.join(o.c);
   }
 }

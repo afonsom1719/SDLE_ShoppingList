@@ -9,21 +9,26 @@ import {
   saveShoppingList,
   getShoppingLists,
   deleteShoppingList,
+  updateShoppingList,
 } from './utils/databaseOps'; // Import PouchDB functions
 import { Stack } from '@mui/material';
 import ShoppingListSelector from './components/ShoppingLists/ShoppingLists';
 import WarningModal from './components/WarningModal/WarningModal';
 import { convertToProductEntry } from './utils/typeConversion';
+import SyncButton from './components/SyncButton/SyncButton';
+import { syncProducts } from './API';
 
 const App: React.FC = () => {
   const [shoppingList, setShoppingList] = useState<string>('');
   const [products, setProducts] = useState<ProductEntry<string, CCounter>[]>([]);
-  const [shoppingLists, setShoppingLists] = useState<string[]>([]);
+  const [shoppingLists, setShoppingLists] = useState<Ormap[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalWarnLevel, setModalWarnLevel] = useState('');
-  let productsCRDT = new Ormap(shoppingList);
+  const [isSynced, setIsSynced] = useState(false);
   const isInitialRender = useRef(true);
+  let productsCRDT: Ormap = new Ormap(shoppingList);
+  productsCRDT.m = products;
 
   useEffect(() => {
     fetchShoppingLists();
@@ -31,135 +36,237 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!isInitialRender.current) {
-      // This block will run after the first render
       if (shoppingLists.length === 0) {
-        addFirstShoppingList("My Shopping List");
+        addFirstShoppingList('My Shopping List');
         fetchShoppingLists();
       }
     } else {
-      // Update the ref to mark that the initial render is done
-      setShoppingList(shoppingLists[0]);
+      if (shoppingLists.length > 0) {
+        setShoppingList(shoppingLists[0].id);
+      }
       isInitialRender.current = false;
     }
+    fetchProductsForAllShoppingLists();
+    const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
+    if (selectedShoppingList) {
+      const newContext = selectedShoppingList.c as DotContext;
+      const newContext2 =  new DotContext();
+      newContext2.cc = newContext.cc;
+      newContext2.dc = newContext.dc;
+      productsCRDT = new Ormap(selectedShoppingList.id, newContext2);
+      products.forEach((product) => {
+        productsCRDT.get(product.key).inc(product.value.read());
+      }); 
+    }
+    setIsSynced(false);
   }, [shoppingLists]);
 
   useEffect(() => {
     fetchProducts();
+    const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
+    if (selectedShoppingList) {
+
+      productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
+    }
   }, [shoppingList]);
+
+  useEffect(() => {
+    setIsSynced(false);
+  }, [products]);
 
   const constructModalMessage = (message: string, warnLevel: string): void => {
     setModalMessage(message);
     setModalWarnLevel(warnLevel);
     setIsModalOpen(true);
-    console.log(`${warnLevel}: ${message}`);
   };
 
   const addFirstShoppingList = (shoppingListId: string): void => {
     setShoppingList(shoppingListId);
-    productsCRDT = new Ormap(shoppingListId);
     saveShoppingList({ name: shoppingListId, context: productsCRDT.c });
-    console.log('selected shopping list: ', shoppingListId);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
+  // const syncAllShoppingLists = async () => {
+  //   const updatedShoppingLists = [...shoppingLists];
+  
+  //   for (let i = 0; i < shoppingLists.length; i++) {
+  //     for (let j = 0; j < shoppingLists.length; j++) {
+  //       if (i !== j) {
+  //         console.log('Syncing ' + shoppingLists[i].id + ' with ' + shoppingLists[j].id);
+  //         console.log('Before: ' + shoppingLists[i]);
+  //         shoppingLists[i].join(shoppingLists[j]);
+  //         console.log('After: ' + shoppingLists[i]);
+  
+  //         // Update the local state with the merged shopping list
+  //         updatedShoppingLists[i] = shoppingLists[i];
+  //       }
+  //     }
+  //   }
+  
+  //   // Update the database entries and fetch the latest data
+  //   await Promise.all(
+  //     updatedShoppingLists.map(async (list) => {
+  //       // Update database entry for each shopping list
+  //       console.log('Updated ' + list.m);
+  //       await updateShoppingList({
+  //         name: list.id,
+  //         context: list.c,
+  //         collection: 'shopping-lists',
+  //       });
+  //       list.m.forEach(async (product) => {
+  //         const updateResponse = await updateProducts(product, list.id);
+  //         if (updateResponse === null) {
+  //           await saveProduct(product, list.id);
+  //         }
+  //       }
+  //       );
+  //     })
+  //   );
+  
+  //   // Update the state with the latest shopping lists and products
+  //   setShoppingLists(updatedShoppingLists);
+  //   setIsSynced(true);
+  //   fetchProductsForAllShoppingLists();
+  //   fetchProducts();
+  // };
+
+  const syncWithServer = async () => {
+    const response = await syncProducts(productsCRDT);
+    console.log(response);
+  };
+
   const fetchProducts = (): void => {
-    console.log('fetching products: ', shoppingList);
     getAllProducts(shoppingList)
       .then((response) => {
-        console.log('Received response: ', response);
         let mappedResponse: ProductEntry<string, CCounter>[] = response.map((product) => {
-          const mappedProduct = convertToProductEntry(product);
-          return mappedProduct;
+          return convertToProductEntry(product);
         });
-
-        console.log('Mapped response products: ', mappedResponse);
-
         if (mappedResponse !== undefined) {
-          console.log('productsCRDT.m: ', mappedResponse);
           setProducts(mappedResponse);
         }
       })
       .catch((err: Error) => console.log(err));
   };
 
-  // const fetchShoppingList = (): void => {
-  //   getShoppingListContext(shoppingList)
-  //     .then((response) => {
-  //       console.log("Received response: ", response);
-  //       productsCRDT = new Ormap(shoppingList, response);
-  //       setProducts(productsCRDT.m);
-  //     })
-  //     .catch((err: Error) => console.log(err));
-  // }
+  const fetchProductsForAllShoppingLists = () => {
+    let tempShoppingLists: Ormap[] = shoppingLists;
+    tempShoppingLists.forEach((shoppingList) => {
+      getAllProducts(shoppingList.id)
+        .then((response) => {
+          let mappedResponse: ProductEntry<string, CCounter>[] = response.map((product) => {
+
+            return convertToProductEntry(product);
+          });
+          if (mappedResponse !== undefined) {
+            shoppingList.m = mappedResponse;
+          }
+        })
+        .catch((err: Error) => console.log(err));
+    });
+    setShoppingLists(tempShoppingLists);
+  };
 
   const fetchShoppingLists = (): void => {
     getShoppingLists()
       .then((response) => {
-        console.log('Received response: ', response);
-        const mappedResponse: string[] = response.map(
-          (shoppingList: PouchDB.Core.ExistingDocument<PouchDB.Core.AllDocsMeta> | undefined) => {
-            const mappedShoppingList = shoppingList as IShoppingList;
-            return mappedShoppingList?.name;
-          }
-        );
-        console.log('shopping list state:', shoppingList);
+        const mappedResponse: IShoppingList[] = response.map((shoppingList) => {
+          return shoppingList as IShoppingList;
+        });
         if (shoppingList === '' || shoppingList === undefined || shoppingList === null) {
-          setShoppingList(mappedResponse[0]);
-          productsCRDT = new Ormap(mappedResponse[0]);
+          setShoppingList(mappedResponse[0].name);
         }
-        setShoppingLists(mappedResponse);
-        console.log('Mapped response shopping lists: ', mappedResponse);
+        const ormapResponse: Ormap[] = mappedResponse.map((shoppingList) => {
+          const newContext = new DotContext();
+          newContext.cc = shoppingList.context.cc;
+          newContext.dc = shoppingList.context.dc;
+
+          return new Ormap(shoppingList.name, newContext);
+        });
+        setShoppingLists(ormapResponse);
       })
-      .then(() => {})
       .catch((err: Error) => console.log(err));
   };
 
-  const handleSaveProduct = (e: React.FormEvent, formData: ProductEntry<string, CCounter>): void => {
-    console.log("Form data value: ", formData.value.read());
-    formData.shoppingListId = shoppingList;
+  const handleSaveProduct = async (e: React.FormEvent, formData: ProductEntry<string, CCounter>): Promise<void> => {
     e.preventDefault();
-    saveProduct(formData, shoppingList)
-      .then(() => fetchProducts())
-      .catch((err: any) => console.log(err));
+    const shoppingListToUpdate: ShoppingListEntry<string, DotContext> = {
+      name: productsCRDT.id,
+      context: productsCRDT.c,
+      collection: 'shopping-lists',
+    };
+
+    try {
+      productsCRDT.get(formData.key).inc(formData.value.read());
+
+      saveProduct(formData, shoppingList).then(() => {
+        fetchProducts();
+        updateShoppingList(shoppingListToUpdate);
+        fetchShoppingLists();
+      });
+    } catch (err) {
+      console.log('Error saving product:', err);
+    }
   };
 
-  const handleDeleteProduct = (productId: string): void => {
-    deleteProduct(productId, shoppingList)
-      .then(() => fetchProducts())
-      .catch((err: any) => console.log(err));
+  const handleDeleteProduct = async (productId: string): Promise<void> => {
+    try {
+      await deleteProduct(productId, shoppingList).then(() => {
+        const productToDelete = products.find((product) => product.key === productId);
+        if (productToDelete) {
+          productsCRDT.erase(productToDelete.key);
+        }
+        updateShoppingList({
+          name: productsCRDT.id,
+          context: productsCRDT.c,
+          collection: 'shopping-lists',
+        });
+      });
+      fetchProducts();
+    } catch (err) {
+      console.log('Error deleting product:', err);
+    }
   };
 
-  const handleDeleteShoppingList = (shoppingListId: string): void => {
-    setShoppingList(shoppingLists[0]);
-    deleteShoppingList(shoppingListId)
-      .then(() => fetchShoppingLists())
-      .catch((err: any) => console.log(err));
+  const handleDeleteShoppingList = async (shoppingListId: string): Promise<void> => {
+    if (shoppingListId === productsCRDT.id) {
+      const newShoppingList = shoppingLists.find((list) => list.id !== shoppingListId);
+      if (newShoppingList) {
+        setShoppingList(newShoppingList.id);
+      }
+    }
+
+    try {
+      await deleteShoppingList(shoppingListId);
+      fetchShoppingLists();
+    } catch (err) {
+      console.log('Error deleting shopping list:', err);
+    }
   };
 
   const handleShoppingListSelected = (shoppingListId: string) => {
     setShoppingList(shoppingListId);
-    productsCRDT = new Ormap(shoppingListId);
-    console.log('selected shopping list: ', shoppingListId);
   };
 
-  const handleAddShoppingList = (e: React.FormEvent, formData: ShoppingListEntry<string, DotContext>): void => {
-    console.log('Saving shopping list:', formData);
+  const handleAddShoppingList = async (
+    e: React.FormEvent,
+    formData: ShoppingListEntry<string, DotContext>
+  ): Promise<void> => {
     e.preventDefault();
     setShoppingList(formData.name);
-    console.log('shopping list: ', shoppingLists);
-    console.log('shopping list contains: ', shoppingLists.includes(formData.name));
-    if (shoppingLists.includes(formData.name)) {
-      constructModalMessage('Shopping list already exists!', 'warning');
 
+    if (shoppingLists.some((list) => list.id === formData.name)) {
+      constructModalMessage('Shopping list already exists!', 'warning');
       return;
     }
-    productsCRDT = new Ormap(formData.name, formData.context);
-    saveShoppingList(formData)
-      .then(() => fetchShoppingLists())
-      .catch((err: any) => console.log(err));
+
+    try {
+      await Promise.all([saveShoppingList(formData), fetchShoppingLists()]);
+    } catch (err) {
+      console.log('Error adding shopping list:', err);
+    }
   };
 
   return (
@@ -168,7 +275,7 @@ const App: React.FC = () => {
         <ShoppingListSelector
           customStyle={{ flex: 1 }}
           shoppingLists={shoppingLists}
-          currentShoppingList={shoppingList}
+          currentShoppingList={productsCRDT}
           onShoppingListSelected={handleShoppingListSelected}
           onAddShoppingList={handleAddShoppingList}
           onDeleteShoppingList={handleDeleteShoppingList}
@@ -176,14 +283,12 @@ const App: React.FC = () => {
         <div style={{ flex: 3 }}>
           <h1>My Shopping List</h1>
           <AddProduct saveProduct={handleSaveProduct} />
-          {products.map(
-            (product: ProductEntry<string, CCounter>) => (
-              console.log('product: ', product),
-              (<ProductItem key={product.key} deleteProduct={handleDeleteProduct} product={product} />)
-            )
-          )}
+          {products.map((product: ProductEntry<string, CCounter>) => (
+            <ProductItem key={product.key} deleteProduct={() => handleDeleteProduct(product.key)} product={product} />
+          ))}
         </div>
       </Stack>
+      <SyncButton isSynced={isSynced} onSyncClick={isSynced ? () => {} : syncWithServer} />
       <WarningModal isOpen={isModalOpen} onClose={closeModal} message={modalMessage} level={modalWarnLevel} />
     </main>
   );

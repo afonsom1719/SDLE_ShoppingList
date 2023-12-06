@@ -7,7 +7,7 @@ interface Pair<A, B> {
 }
 
 class CCounter {
-  private dk: DotKernel; // Dot kernel
+  public dk: DotKernel; // Dot kernel
   private id: string;
 
   constructor(k?: string, jointc?: DotContext) {
@@ -75,6 +75,7 @@ class CCounter {
   }
 
   join(o: CCounter): void {
+    console.log('Joining CCounter: ', this.dk.c.cc, ' with ', o.dk.c.cc);
     this.dk.join(o.dk);
   }
 }

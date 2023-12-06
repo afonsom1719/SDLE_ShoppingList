@@ -5,6 +5,8 @@ import { CCounter } from "./ccounter";
 export interface ProductEntry<N, V> {
   key: N;
   value: V;
+  shoppingListId?: string;
+  collection?: string;
 }
 
 // Define a generic class for the ormap
@@ -67,6 +69,27 @@ export class Ormap {
       // If the key is found, return the existing value
       return this.m[i].value;
     }
+  }
+
+  // Define a static factory method to create an instance of Ormap
+  static createWithConfig(
+    id?: string,
+    jointContext?: DotContext,
+    entries?: ProductEntry<string, CCounter>[],
+  ): Ormap {
+    const ormap = new Ormap(id, jointContext);
+
+    // Add entries if provided
+    if (entries) {
+      entries.forEach((product: ProductEntry<string, CCounter>) => {
+        console.log('key: ', product.key);
+        console.log('value: ', product.value);
+        const newCC = new CCounter(product.key, product.value.dk.c);
+        ormap.m.push({ key: product.key, value: newCC });
+      });
+    }
+
+    return ormap;
   }
 
   // Define a method to erase a key from the map

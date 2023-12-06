@@ -3,9 +3,18 @@ class DotContext {
   public cc: Map<string, number>; // Compact causal context
   public dc: Set<[string, number]>; // Dot cloud
 
-  constructor() {
-    this.cc = new Map<string, number>();
-    this.dc = new Set<[string, number]>();
+  constructor(cc?: Map<string, number>, dc?: Set<[string, number]>) {
+    console.log('DotContext constructor', typeof cc,typeof dc);
+    let ccLocal = cc;
+    let dcLocal = dc;
+    if(typeof cc === 'string') {
+      ccLocal = JSON.parse(cc);
+    }
+    if(typeof dc === 'string') {
+      dcLocal = JSON.parse(dc);
+    }
+    this.cc = ccLocal || new Map<string, number>();
+    this.dc = dcLocal || new Set<[string, number]>();
   }
 
   public equals(o: DotContext): boolean {
@@ -24,17 +33,17 @@ class DotContext {
   }
 
   public toString(): string {
-    let output = "Context:";
-    output += " CC ( ";
+    let output = 'Context:';
+    output += ' CC ( ';
     for (const [k, v] of this.cc) {
-      output += k + ":" + v + " ";
+      output += k + ':' + v + ' ';
     }
-    output += ")";
-    output += " DC ( ";
+    output += ')';
+    output += ' DC ( ';
     for (const [k, v] of this.dc) {
-      output += k + ":" + v + " ";
+      output += k + ':' + v + ' ';
     }
-    output += ")";
+    output += ')';
     return output;
   }
 

@@ -6,10 +6,9 @@ type Props = {
 }
 
 const AddShoppingList: React.FC<Props> = ({ saveShoppingList: saveProduct }) => {
-  const [formData, setFormData] = useState<ShoppingListEntry<string, DotContext> | {}>()
+  const [formData, setFormData] = useState<ShoppingListEntry<string, DotContext> | {}>({context: new DotContext(), name: ''})
 
   const handleForm = (e: React.FormEvent<HTMLInputElement>): void => {
-    console.log('handleForm: ', e.currentTarget.id, e.currentTarget.value);
     setFormData({
       ...formData,
       [e.currentTarget.id]: e.currentTarget.value,
@@ -21,7 +20,7 @@ const AddShoppingList: React.FC<Props> = ({ saveShoppingList: saveProduct }) => 
       <div>
         <div>
           <label htmlFor='name'>Name</label>
-          <input onChange={handleForm} type='text' id='name' />
+          <input required={true} onChange={handleForm} type='text' id='name' />
         </div>
       </div>
       <button disabled={formData === undefined ? true: false} >Add Shopping list</button>

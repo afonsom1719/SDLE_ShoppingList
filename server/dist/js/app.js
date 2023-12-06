@@ -7,7 +7,6 @@ const express_1 = __importDefault(require("express"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const cors_1 = __importDefault(require("cors"));
 const routes_1 = __importDefault(require("./routes"));
-const crdts_1 = require("./types/crdts");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 4000;
 app.use((0, cors_1.default)());
@@ -27,21 +26,3 @@ mongoose_1.default
     console.error('Error connecting to MongoDB:', error);
     process.exit(1); // Exit the application if MongoDB connection fails
 });
-let ormap = new crdts_1.Ormap('x');
-let ormap2 = new crdts_1.Ormap('y');
-ormap.get('macas').inc(2);
-ormap2.get('macas').inc(3);
-ormap2.get('peras').inc(2);
-for (const kv of ormap.m) {
-    console.log("Ormap x: ", kv.key, kv.value.read());
-}
-for (const kv of ormap2.m) {
-    console.log("Ormap y: ", kv.key, kv.value.read());
-}
-ormap.join(ormap2);
-for (const kv of ormap.m) {
-    console.log("Ormap x: ", kv.key, kv.value.read());
-}
-for (const kv of ormap2.m) {
-    console.log("Ormap y: ", kv.key, kv.value.read());
-}

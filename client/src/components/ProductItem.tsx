@@ -6,7 +6,6 @@ type Props = ProductProps & {
 
 const Product: React.FC<Props> = ({ product, deleteProduct }) => {
   const checkProduct: string = ''
-  console.log('Product: ', product)
   return (
     <div className='Card'>
       <div className='Card--text'>

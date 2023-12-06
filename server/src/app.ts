@@ -27,28 +27,3 @@ mongoose
 		console.error('Error connecting to MongoDB:', error);
 		process.exit(1); // Exit the application if MongoDB connection fails
 	});
-
-	
-let ormap = new Ormap('x');
-let ormap2 = new Ormap('y');
-
-ormap.get('macas').inc(2);
-ormap2.get('macas').inc(3);
-ormap2.get('peras').inc(2);
-
-for (const kv of ormap.m) {
-	console.log("Ormap x: ", kv.key, kv.value.read());
-}
-
-for (const kv of ormap2.m) {
-	console.log("Ormap y: ", kv.key, kv.value.read());
-}
-ormap.join(ormap2);
-
-for (const kv of ormap.m) {
-	console.log("Ormap x: ", kv.key, kv.value.read());
-}
-
-for (const kv of ormap2.m) {
-	console.log("Ormap y: ", kv.key, kv.value.read());
-}
