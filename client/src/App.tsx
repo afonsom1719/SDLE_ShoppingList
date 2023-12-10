@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ProductItem from './components/ProductItem';
 import AddProduct from './components/AddProduct';
-import { CCounter, DotContext, Ormap } from './crdts';
+import { CCounter, DotContext, Ormap, Pair } from './crdts';
 import {
   saveProduct,
   getAllProducts,
@@ -16,7 +16,7 @@ import ShoppingListSelector from './components/ShoppingLists/ShoppingLists';
 import WarningModal from './components/WarningModal/WarningModal';
 import { convertToProductEntry } from './utils/typeConversion';
 import SyncButton from './components/SyncButton/SyncButton';
-import { syncProducts } from './API';
+import { addProducts, addShoppingList, syncProducts } from './API';
 
 const App: React.FC = () => {
   const [shoppingList, setShoppingList] = useState<string>('');
@@ -50,13 +50,13 @@ const App: React.FC = () => {
     const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
     if (selectedShoppingList) {
       const newContext = selectedShoppingList.c as DotContext;
-      const newContext2 =  new DotContext();
+      const newContext2 = new DotContext();
       newContext2.cc = newContext.cc;
       newContext2.dc = newContext.dc;
       productsCRDT = new Ormap(selectedShoppingList.id, newContext2);
       products.forEach((product) => {
         productsCRDT.get(product.key).inc(product.value.read());
-      }); 
+      });
     }
     setIsSynced(false);
   }, [shoppingLists]);
@@ -65,7 +65,6 @@ const App: React.FC = () => {
     fetchProducts();
     const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
     if (selectedShoppingList) {
-
       productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
     }
   }, [shoppingList]);
@@ -91,7 +90,7 @@ const App: React.FC = () => {
 
   // const syncAllShoppingLists = async () => {
   //   const updatedShoppingLists = [...shoppingLists];
-  
+
   //   for (let i = 0; i < shoppingLists.length; i++) {
   //     for (let j = 0; j < shoppingLists.length; j++) {
   //       if (i !== j) {
@@ -99,13 +98,13 @@ const App: React.FC = () => {
   //         console.log('Before: ' + shoppingLists[i]);
   //         shoppingLists[i].join(shoppingLists[j]);
   //         console.log('After: ' + shoppingLists[i]);
-  
+
   //         // Update the local state with the merged shopping list
   //         updatedShoppingLists[i] = shoppingLists[i];
   //       }
   //     }
   //   }
-  
+
   //   // Update the database entries and fetch the latest data
   //   await Promise.all(
   //     updatedShoppingLists.map(async (list) => {
@@ -125,7 +124,7 @@ const App: React.FC = () => {
   //       );
   //     })
   //   );
-  
+
   //   // Update the state with the latest shopping lists and products
   //   setShoppingLists(updatedShoppingLists);
   //   setIsSynced(true);
@@ -134,8 +133,105 @@ const App: React.FC = () => {
   // };
 
   const syncWithServer = async () => {
-    const response = await syncProducts(productsCRDT);
-    console.log(response);
+    // console.log(productsCRDT.m[0].value);
+    productsCRDT.m.forEach((product) => {
+      product.shoppingListId = productsCRDT.id;
+    }
+    );
+    const response = await syncProducts(productsCRDT.id);
+    if (response !== null) {
+      if (response.data.message === 'No products in database') {
+        const newShoppingList: IShoppingList = {
+          _id: productsCRDT.id,
+          name: productsCRDT.id,
+          context: productsCRDT.c,
+          collection: 'shopping-lists',
+        };
+        const shoppingListAnswer = await addShoppingList(newShoppingList);
+        const answer = await addProducts(productsCRDT.m);
+        console.log('Answer: ', answer);
+        console.log('Shopping list answer: ', shoppingListAnswer);
+        setProducts(productsCRDT.m);
+      }
+
+      if (!('listName' in response.data)) {
+        constructModalMessage('No list found on server', 'info');
+        return;
+      } else if (!('context' in response.data)) {
+        constructModalMessage('No context found on server', 'warning');
+        return;
+      } else if (!('products' in response.data)) {
+        constructModalMessage('No products found on server', 'warning');
+        return;
+      }
+
+      const assertedContext: DotContext = JSON.parse(response.data.context as string);
+
+
+      if ('entries' in assertedContext.cc) {
+        console.log('assertedContext.cc.entries: ', assertedContext.cc.entries);
+        const entries = Object.entries(assertedContext.cc.entries);
+        const ccEntries: Pair<string, number>[] = Array.from(entries).map(([k, v]) => {
+          return { first: k, second: v };
+        });
+
+        // Convert DC entries to the expected type
+        const dcEntries: [string, number][] = Array.from(assertedContext.dc).map((d) => {
+          return [d[0], d[1]];
+        });
+
+        const convertedContext = DotContext.createWithConfig(ccEntries, dcEntries);
+
+        console.log('convertedContext: ', convertedContext);
+        console.log('response.data.products: ', response.data.products);
+        const parsedProducts: ProductEntry<string, CCounter>[] = JSON.parse(response.data.products as unknown as string); 
+        console.log('parsedProducts: ', parsedProducts);
+
+        const newOrmap = Ormap.createWithConfig(
+          response.data.listName as string,
+          convertedContext,
+          parsedProducts
+        );
+        console.log('newOrmap before: ', newOrmap);
+        productsCRDT.join(newOrmap);
+        console.log('ProductsOrmap after: ', productsCRDT);
+
+
+        // Update the database entries and fetch the latest data
+        await Promise.all(
+          [productsCRDT].map(async (list) => {
+            // Update database entry for each shopping list
+            await updateShoppingList({
+              name: list.id,
+              context: list.c,
+              collection: 'shopping-lists',
+            });
+        
+            list.m.forEach(async (product) => {
+              const updateResponse = await saveProduct(product, list.id);
+              if (updateResponse === null) {
+                await saveProduct(product, list.id);
+              }
+            });
+          })
+        );
+
+        // Send the updated shopping list to the server
+
+        const newShoppingList: IShoppingList = {
+          _id: productsCRDT.id,
+          name: productsCRDT.id,
+          context: productsCRDT.c,
+          collection: 'shopping-lists',
+        };
+        const shoppingListAnswer = await addShoppingList(newShoppingList);
+        console.log('Shopping list answer: ', shoppingListAnswer);
+        const answer = await addProducts(productsCRDT.m);
+        console.log(answer);
+      }
+    }
+    setProducts(productsCRDT.m);
+
   };
 
   const fetchProducts = (): void => {
@@ -157,7 +253,6 @@ const App: React.FC = () => {
       getAllProducts(shoppingList.id)
         .then((response) => {
           let mappedResponse: ProductEntry<string, CCounter>[] = response.map((product) => {
-
             return convertToProductEntry(product);
           });
           if (mappedResponse !== undefined) {

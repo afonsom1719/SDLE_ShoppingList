@@ -1,45 +1,22 @@
 import axios, { AxiosResponse } from 'axios';
-import { CCounter, Ormap } from './crdts';
-
+import { CCounter } from './crdts';
+import { JsonSerializer } from 'typescript-json-serializer';
+import { customSerializer } from './utils/typeConversion';
 const baseUrl: string = 'http://localhost:4000';
 
-function customSerializer(key: string, value: any): any {
-	if (value instanceof Map) {
-	  const entries = Array.from(value.entries())
-		.map(([subKey, subValue]) => ` '${subKey}' => ${subValue}`)
-		.join(', ');
-	  return `Map(${value.size}) {${entries}}`;
-	  console.log('Map: ', key);
-	} else if (value instanceof Set) {
-	  const values = Array.from(value.values())
-		.map((subValue) => ` ${subValue}`)
-		.join(', ');
-	  return `Set(${value.size}) {${values}}`;
-	} else if (value instanceof Object && !(value instanceof Array)) {
-	  const serializedObject: any = {};
-	  for (const [subKey, subValue] of Object.entries(value)) {
-		serializedObject[subKey] = customSerializer(subKey, subValue);
-	  }
-	  return serializedObject;
-	}
-  
-	return value;
-  }
-
-export const syncProducts = async (currentProducts: Ormap): Promise<AxiosResponse<ApiDataType>> => {
+export const syncProducts = async (shoppingListId: string): Promise<AxiosResponse<ApiDataType>> => {
   try {
-    console.log('Ormap before server: ', currentProducts);
-    const serializedObject = JSON.stringify(currentProducts, customSerializer);
-    console.log('Serialized object: ', serializedObject);
-	console.log('Deserialized object: ', JSON.parse(serializedObject));
-    const products: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/products', serializedObject, {
-		headers: {
-			'Content-Type': 'application/json',
-		},});
+    const products: AxiosResponse<ApiDataType> = await axios.get(baseUrl + '/products', {
+      params: {
+        shoppingListId: shoppingListId,
+      },
+    });
+
+    console.log('syncProducts: ', products);
     return products;
   } catch (error) {
     console.log(error);
-    throw new Error('hello');
+    throw new Error('Failed to sync products');
   }
 };
 
@@ -53,15 +30,41 @@ export const getShoppingLists = async (): Promise<AxiosResponse<ApiDataType>> =>
   }
 };
 
-export const addProduct = async (formData: ProductEntry<string, CCounter>): Promise<AxiosResponse<ApiDataType>> => {
+export const addProducts = async (formData: ProductEntry<string, CCounter>[]): Promise<AxiosResponse<ApiDataType>> => {
+  const defaultSerializer = new JsonSerializer();
   try {
-    const product: Omit<ProductEntry<string, CCounter>, '_id'> = {
-      key: formData.key,
-      value: formData.value,
-    };
-    console.log(product);
-    const saveProduct: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/add-product', product);
+    const serializedFormData = defaultSerializer.serialize(formData);
+    const stringifiedFormData = JSON.stringify(serializedFormData, customSerializer);
+    const parsedFormData = JSON.parse(stringifiedFormData);
+    console.log('stringifiedFormData: ', stringifiedFormData);
+    console.log('parsedFormData: ', parsedFormData);
+
+    console.log('serializedFormData: ', serializedFormData);
+    const saveProduct: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/add-product', stringifiedFormData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return saveProduct;
+  } catch (error) {
+    throw new Error('hello');
+  }
+};
+
+// Add shopping list
+export const addShoppingList = async (formData: IShoppingList): Promise<AxiosResponse<ApiDataType>> => {
+  try {
+    const stringifiedFormData = JSON.stringify(formData, customSerializer);
+    const saveShoppingList: AxiosResponse<ApiDataType> = await axios.post(
+      baseUrl + '/add-shopping-list',
+      stringifiedFormData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+      );
+    return saveShoppingList;
   } catch (error) {
     throw new Error('hello');
   }

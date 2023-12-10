@@ -1,5 +1,6 @@
 import { DotContext } from "./dotcontext";
 import { CCounter } from "./ccounter";
+import { JsonObject, JsonProperty } from 'typescript-json-serializer';
 
 // Define a generic interface for the map entries
 export interface ProductEntry<N, V> {
@@ -10,14 +11,15 @@ export interface ProductEntry<N, V> {
 }
 
 // Define a generic class for the ormap
+
+// Define a generic class for the ormap
+@JsonObject()
 export class Ormap {
   // Use an array of MapEntry to store the map data
-  m: Array<ProductEntry<string, CCounter>>;
-
-  // Use the DotContext class to store the causal context
-  cbase: DotContext;
-  c: DotContext;
-  id: string;
+  @JsonProperty() m: Array<ProductEntry<string, CCounter>>; // Use an array of MapEntry to store the map data
+  @JsonProperty() cbase: DotContext; // Use the DotContext class to store the causal context
+  @JsonProperty() c: DotContext;
+  @JsonProperty() id: string;
 
   // Define the constructor with optional parameters
   constructor(i?: string, jointc?: DotContext) {
@@ -43,14 +45,14 @@ export class Ormap {
 
   // Define a method to print the ormap
   toString(): string {
-    // Use a string variable to store the output
-    let output = "Map:" + this.c.toString() + "\n";
-    // Loop through the map entries and append them to the output
-    for (const kv of this.m) {
-      output += kv.key + "->" + kv.value + "\n";
-    }
+  // Use a string variable to store the output
+  let output = "Map:" + this.c.toString() + "\n";
+  // Loop through the map entries and append them to the output
+  for (const kv of this.m) {
+  output += kv.key + "->" + kv.value + "\n";
+  }
     // Return the output
-    return output;
+  return output;
   }
 
   // Define a method to access the map by key
@@ -136,8 +138,8 @@ export class Ormap {
   }
 
   // Define a method to join the map with another ormap
-  join(o: Ormap): void {
-    // Store a copy of the current context
+  join(o: Ormap): void {  
+// Store a copy of the current context
     const ic = this.c.copy();
 
     // Join all keys
@@ -156,14 +158,14 @@ export class Ormap {
 
     o.m.forEach((kv) => {
       if (this.m.findIndex((kv2) => kv2.key === kv.key) === -1) {
-        console.log("Entry only at other: ", kv.key);
+console.log("Entry only at other: ", kv.key);
         console.log("Creating empty value with context: ", kv.value);
         let empty = new CCounter(this.id, o.c);
         this.get(kv.key).inc(kv.value.read());
       }
     });
-    
-    // Join the current context with the other context
+
+// Join the current context with the other context
     this.c.join(o.c);
   }
 }

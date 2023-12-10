@@ -1,20 +1,53 @@
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
+import { Pair } from "./ccounter";
+
 // Autonomous causal context, for context sharing in maps
+@JsonObject()
 class DotContext {
-  public cc: Map<string, number>; // Compact causal context
-  public dc: Set<[string, number]>; // Dot cloud
+  @JsonProperty() public cc: Map<string, number>; // Compact causal context
+  @JsonProperty() public dc: Set<[string, number]>; // Dot cloud
 
   constructor(cc?: Map<string, number>, dc?: Set<[string, number]>) {
-    console.log('DotContext constructor', typeof cc,typeof dc);
     let ccLocal = cc;
     let dcLocal = dc;
-    // if(typeof cc === 'string') {
-    //   ccLocal = JSON.parse(cc);
-    // }
-    // if(typeof dc === 'string') {
-    //   dcLocal = JSON.parse(dc);
-    // }
-    this.cc = ccLocal || new Map<string, number>();
-    this.dc = dcLocal || new Set<[string, number]>();
+    if (typeof cc === 'undefined') {
+      ccLocal = new Map<string, number>();
+    }
+    if (typeof dc === 'undefined') {
+      dcLocal = new Set<[string, number]>();
+    }
+    console.log('DotContext constructor', typeof cc,typeof dc);
+    console.log('DotContext constructor', ccLocal,dcLocal);
+    this.cc = ccLocal!;
+    this.dc = dcLocal!;
+  }
+
+  static createWithConfig(
+    ccEntries?: Pair<string, number>[],
+    dcEntries?: [string, number][],
+  ): DotContext {
+    const dotContext = new DotContext();
+
+    // Add CC entries if provided
+    if (ccEntries) {
+      ccEntries.forEach((entry: Pair<string, number>) => {
+        dotContext.cc.set(entry.first, entry.second);
+      });
+    }
+
+    
+
+    // Add DC entries if provided
+    if (dcEntries) {
+      dcEntries.forEach((entry: [string, number]) => {
+        dotContext.dc.add(entry);
+      });
+    }
+
+    // Compact the created context
+    dotContext.compact();
+
+    return dotContext;
   }
 
   public equals(o: DotContext): boolean {
@@ -31,6 +64,8 @@ class DotContext {
     }
     return true;
   }
+
+  
 
   public toString(): string {
     let output = 'Context:';

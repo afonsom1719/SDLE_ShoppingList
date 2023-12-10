@@ -8,7 +8,7 @@ const productSchema: Schema = new Schema(
       required: true,
     },
     quantity: {
-      type: Schema.Types.Mixed,
+      type: String,
       required: true,
     },
     shoppingList: {

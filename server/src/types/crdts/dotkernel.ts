@@ -1,4 +1,5 @@
 import { DotContext } from "./dotcontext";
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
 
 // Define a generic interface for the dotkernel class
 interface DotKernel {
@@ -33,10 +34,11 @@ interface DotKernel {
 }
 
 // Implement the dotkernel class
+@JsonObject()
 class DotKernel implements DotKernel {
-  ds: Map<[string, number], number>;
-  cbase: DotContext;
-  c: DotContext;
+  @JsonProperty() ds: Map<[string, number], number>; // Map of dots to vals
+  @JsonProperty() cbase: DotContext;
+  @JsonProperty() c: DotContext;
 
   constructor(jointc?: DotContext) {
     this.ds = new Map<[string, number], number>();

@@ -1,7 +1,11 @@
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
+import { Pair } from "./ccounter";
+
 // Autonomous causal context, for context sharing in maps
+@JsonObject()
 class DotContext {
-  public cc: Map<string, number>; // Compact causal context
-  public dc: Set<[string, number]>; // Dot cloud
+  @JsonProperty() public cc: Map<string, number>; // Compact causal context
+  @JsonProperty() public dc: Set<[string, number]>; // Dot cloud
 
   constructor() {
     this.cc = new Map<string, number>();
@@ -21,6 +25,36 @@ class DotContext {
       if (!o.dc.has(d)) return false;
     }
     return true;
+  }
+
+  
+  
+  static createWithConfig(
+    ccEntries?: Pair<string, number>[],
+    dcEntries?: [string, number][],
+  ): DotContext {
+    const dotContext = new DotContext();
+
+    // Add CC entries if provided
+    if (ccEntries) {
+      ccEntries.forEach((entry: Pair<string, number>) => {
+        dotContext.cc.set(entry.first, entry.second);
+      });
+    }
+
+    
+
+    // Add DC entries if provided
+    if (dcEntries) {
+      dcEntries.forEach((entry: [string, number]) => {
+        dotContext.dc.add(entry);
+      });
+    }
+
+    // Compact the created context
+    dotContext.compact();
+
+    return dotContext;
   }
 
   public toString(): string {

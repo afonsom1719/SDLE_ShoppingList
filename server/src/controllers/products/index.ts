@@ -1,107 +1,85 @@
 import { Response, Request } from 'express';
 import { IProduct } from '../../types/product';
 import Product from '../../models/product';
-import { Ormap, CCounter, ProductEntry, DotContext } from '../../types/crdts';
+import { Ormap, CCounter, ProductEntry, DotContext, Pair } from '../../types/crdts';
 import { Types } from 'mongoose';
 import { ShoppingList } from '../../models/shoppingList';
 import { IShoppingList } from '../../types/shoppingList';
-import { convertToProductEntry } from '../../utils/typeConversion';
+import { convertToProductEntry, customSerializer } from '../../utils/typeConversion';
+import { JsonSerializer } from 'typescript-json-serializer';
 
 const getProducts = async (req: Request, res: Response): Promise<void> => {
-  //construct ormap with current products
   console.log('getProducts INITIATE');
+  const defaultSerializer = new JsonSerializer();
 
   try {
-    console.log('getProducts');
-    console.log(req.body);
-    const body: Ormap = req.body as Ormap;
-    const clientOrmap: Ormap = Ormap.createWithConfig(body.id, body.c, body.m);
-    console.log('clientOrmap type: ');
-    console.log('clientOrmap: ', clientOrmap);
-    clientOrmap.m.forEach((product: ProductEntry<string, CCounter>) => {
-      console.log('key: ', product.key);
-      console.log('value type: ', typeof product.value);
-    });
-
-    if (body === undefined) {
-      res.status(400).json({ message: req.body });
+    console.log('PARAMS: ', req.params);
+    if (!('shoppingListId' in req.query)) {
+      res.status(400).json({ message: 'Missing shopping list ID' });
       return;
     }
 
-    // get correct shopping list
-    let shoppingListId: string = clientOrmap.id;
+    const shoppingListId = req.query.shoppingListId as string; // Assuming the shopping list ID is part of the URL parameters
 
-    // get products from db
-    const dbProducts: IProduct[] = await Product.find({ shoppingList: shoppingListId }); // Use the correct field
+    // Retrieve shopping list and products from the database
     const dbShoppingList: IShoppingList | null = await ShoppingList.findOne({ name: shoppingListId });
-
-    console.log('dbProducts: ', dbProducts);
+    const dbProducts: IProduct[] = await Product.find({ shoppingList: shoppingListId });
 
     if (dbShoppingList === null) {
-      ShoppingList.create(
-        {
-          name: shoppingListId,
-          context: clientOrmap.c,
-        },
-        function (err: any, doc: any) {
-          if (err) return console.error(err);
-          console.log('Document inserted successfully!');
-        }
-      );
+      // Add shopping list to the database if it does not exist
+      const newShoppingList: IShoppingList = new ShoppingList({
+        name: shoppingListId,
+        context: new DotContext(),
+      });
     }
 
-    if (dbProducts.length === 0) {
-      console.warn('No products found');
-      clientOrmap.m.forEach((product: ProductEntry<string, CCounter>) => {
-        console.log(product.value.read());
-        Product.create(
-          {
-            name: product.key,
-            quantity: product.value.read(),
-            shoppingList: shoppingListId,
-          },
-          function (err: any, doc: any) {
-            if (err) return console.error(err);
-            console.log('Document inserted succussfully!');
-          }
-        );
-      });
-      res.status(200).json({ Products: body });
-    } else {
-      console.log('dbShoppingList: ', dbShoppingList);
-
-      // construct ormap with db products
-      let mappedResponse: ProductEntry<string, CCounter>[] = dbProducts.map((product) => {
-        return convertToProductEntry(product);
-      });
-      const context: DotContext = dbShoppingList?.context as DotContext;
-      const newContext = new DotContext(dbShoppingList?.context.cc, dbShoppingList?.context.dc);
-      console.log('context: ', newContext);
-      let dbOrmap = Ormap.createWithConfig(dbShoppingList?.name, newContext, mappedResponse);
-      console.log('dbOrmap: ', dbOrmap);
-
-      dbOrmap.join(clientOrmap);
-
-      dbOrmap.m.forEach((product: ProductEntry<string, CCounter>) => {
-        Product.updateOne(
-          { name: product.key, shoppingList: shoppingListId },
-          {
-            name: product.key,
-            quantity: product.value.read(),
-            shoppingList: shoppingListId,
-          },
-          undefined,
-          function (err: any, doc: any) {
-            if (err) return console.error(err);
-            console.log('Document updated succussfully!');
-          }
-        );
-      });
-
-      res.status(200).json({ Products: dbOrmap });
+    console.log('dbShoppingList: ', dbShoppingList);
+    if (!dbProducts.length) {
+      res.status(200).json({ message: 'No products in database' });
+      return;
     }
 
-    // return products
+    // Convert database products to Ormap format
+    const mappedResponse: ProductEntry<string, CCounter>[] = dbProducts.map((product: IProduct) => {
+      return convertToProductEntry(product);
+    });
+
+    console.log('mappedResponse: ', mappedResponse[0].value.dk.ds);
+
+    // Create Ormap with the retrieved data
+    if (dbShoppingList !== null) {
+      const context: DotContext = JSON.parse(dbShoppingList.context);
+
+      console.log('context: ', context);
+      // Convert CC entries to the expected type
+      if ('entries' in context.cc && context.cc.entries.length > 0) {
+        console.log('context.cc.entries: ', context.cc.entries);
+        const entries = Object.entries(context.cc.entries);
+        const ccEntries: Pair<string, number>[] = Array.from(entries).map(([k, v]) => {
+          return { first: k, second: v };
+        });
+
+        // Convert DC entries to the expected type
+        const dcEntries: [string, number][] = Array.from(context.dc).map((d) => {
+          return [d[0], d[1]];
+        });
+
+        const newContext: DotContext = DotContext.createWithConfig(ccEntries, dcEntries);
+        const serializedContext = JSON.stringify(newContext, customSerializer);
+        const serializedMap = JSON.stringify(mappedResponse, customSerializer);
+
+        // Return the Ormap in the response
+        res.status(200).json({ listName: dbShoppingList?.name, context: serializedContext, products: serializedMap });
+      } else if ('entries' in context.cc && context.cc.entries.length === 0) {
+        console.log('context.cc.entries is empty: ', context.cc.entries);
+        const newContext: DotContext = new DotContext();
+        const serializedContext = JSON.stringify(newContext, customSerializer);
+        const serializedMap = JSON.stringify(mappedResponse, customSerializer);
+
+        // Return the Ormap in the response
+        res.status(200).json({ listName: dbShoppingList?.name, context: serializedContext, products: serializedMap });
+      }
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
@@ -136,23 +114,71 @@ const addProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('addProduct');
     console.log(req.body);
-    const body = req.body as Pick<IProduct, 'name' | 'quantity' | 'shoppingList'>;
+    const body: ProductEntry<string, CCounter>[] = req.body;
+    console.log('body: ', body[0].value.dk.ds.entries);
     if (body === undefined) {
       res.status(400).json({ message: req.body });
       return;
     }
+    const allProducts: IProduct[] = await Product.find();
+    console.log('allProducts: ', allProducts);
 
-    const product: IProduct = new Product({
-      name: body.name,
-      quantity: body.quantity,
-      shoppingList: body.shoppingList,
+    body.forEach(async (product: ProductEntry<string, CCounter>) => {
+      // Check if the product already exists
+      console.log('serializedCCounter: ', product);
+      const serializedCCounter = product.value;
+      const serializedCCounterString = JSON.stringify(serializedCCounter, customSerializer);
+      const productExists = allProducts.find(
+        (p) => p.name === product.key && p.shoppingList === product.shoppingListId
+      );
+    
+      if (productExists) {
+        // Update the product
+        productExists.quantity = serializedCCounterString;
+        productExists.shoppingList = product.shoppingListId!;
+        await productExists.save();
+      } else {
+        // Create the product
+
+        const newProduct: IProduct = new Product({
+          name: product.key,
+          quantity: serializedCCounterString,
+          shoppingList: product.shoppingListId,
+        });
+        await newProduct.save();
+      }
     });
 
-    const newProduct: IProduct = await product.save();
+    res.status(201).json({ message: 'Products added' });
+  } catch (error) {
+    throw error;
+  }
+};
 
-    const allProducts: IProduct[] = await Product.find();
+const addShoppingList = async (req: Request, res: Response): Promise<void> => {
+  console.log('addShoppingList');
+  try {
+    // Add ShoppingList to the database if it does not exist
+    console.log(req.body);
+    const shoppingListName = req.body.name;
+    const shoppingListContext = JSON.stringify(req.body.context);
+    const newShoppingList: IShoppingList = new ShoppingList({
+      name: shoppingListName,
+      context: shoppingListContext,
+    });
 
-    res.status(201).json({ message: 'Product added', product: newProduct, products: allProducts });
+    // find if shopping list already exists
+    const shoppingListExists: IShoppingList | null = await ShoppingList.findOne({ name: shoppingListName });
+    if (shoppingListExists) {
+      // Update the shopping list
+      shoppingListExists.context = shoppingListContext;
+      await shoppingListExists.save();
+    } else {
+      // Create the shopping list
+      await newShoppingList.save();
+    }
+
+    res.status(201).json({ message: 'Shopping list added' });
   } catch (error) {
     throw error;
   }
@@ -172,4 +198,4 @@ const deleteProduct = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { getProducts, getShoppingLists, addProduct, deleteProduct };
+export { getProducts, getShoppingLists, addProduct, deleteProduct, addShoppingList };
