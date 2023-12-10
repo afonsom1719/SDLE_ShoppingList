@@ -29,10 +29,13 @@ const App: React.FC = () => {
   const isInitialRender = useRef(true);
   let productsCRDT: Ormap = new Ormap(shoppingList);
   productsCRDT.m = products;
+  
 
   useEffect(() => {
     fetchShoppingLists();
   }, []);
+
+   
 
   useEffect(() => {
     if (!isInitialRender.current) {
@@ -47,30 +50,31 @@ const App: React.FC = () => {
       isInitialRender.current = false;
     }
     fetchProductsForAllShoppingLists();
-    const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
-    if (selectedShoppingList) {
-      const newContext = selectedShoppingList.c as DotContext;
-      const newContext2 = new DotContext();
-      newContext2.cc = newContext.cc;
-      newContext2.dc = newContext.dc;
-      productsCRDT = new Ormap(selectedShoppingList.id, newContext2);
-      products.forEach((product) => {
-        productsCRDT.get(product.key).inc(product.value.read());
-      });
-    }
+    // const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
+    // if (selectedShoppingList) {
+    //   const newContext = selectedShoppingList.c as DotContext;
+    //   const newContext2 = new DotContext();
+    //   newContext2.cc = newContext.cc;
+    //   newContext2.dc = newContext.dc;
+    //   productsCRDT = new Ormap(selectedShoppingList.id, newContext2);
+    //   products.forEach((product) => {
+    //     productsCRDT.get(product.key).inc(product.value.read());
+    //   });
+    // }
     setIsSynced(false);
   }, [shoppingLists]);
 
   useEffect(() => {
     fetchProducts();
-    const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
-    if (selectedShoppingList) {
-      productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
-    }
+    // const selectedShoppingList = shoppingLists.find((list) => list.id === shoppingList);
+    // if (selectedShoppingList) {
+    //   productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
+    // }
   }, [shoppingList]);
 
   useEffect(() => {
     setIsSynced(false);
+    productsCRDT.m = products;
   }, [products]);
 
   const constructModalMessage = (message: string, warnLevel: string): void => {
@@ -88,52 +92,9 @@ const App: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  // const syncAllShoppingLists = async () => {
-  //   const updatedShoppingLists = [...shoppingLists];
-
-  //   for (let i = 0; i < shoppingLists.length; i++) {
-  //     for (let j = 0; j < shoppingLists.length; j++) {
-  //       if (i !== j) {
-  //         console.log('Syncing ' + shoppingLists[i].id + ' with ' + shoppingLists[j].id);
-  //         console.log('Before: ' + shoppingLists[i]);
-  //         shoppingLists[i].join(shoppingLists[j]);
-  //         console.log('After: ' + shoppingLists[i]);
-
-  //         // Update the local state with the merged shopping list
-  //         updatedShoppingLists[i] = shoppingLists[i];
-  //       }
-  //     }
-  //   }
-
-  //   // Update the database entries and fetch the latest data
-  //   await Promise.all(
-  //     updatedShoppingLists.map(async (list) => {
-  //       // Update database entry for each shopping list
-  //       console.log('Updated ' + list.m);
-  //       await updateShoppingList({
-  //         name: list.id,
-  //         context: list.c,
-  //         collection: 'shopping-lists',
-  //       });
-  //       list.m.forEach(async (product) => {
-  //         const updateResponse = await updateProducts(product, list.id);
-  //         if (updateResponse === null) {
-  //           await saveProduct(product, list.id);
-  //         }
-  //       }
-  //       );
-  //     })
-  //   );
-
-  //   // Update the state with the latest shopping lists and products
-  //   setShoppingLists(updatedShoppingLists);
-  //   setIsSynced(true);
-  //   fetchProductsForAllShoppingLists();
-  //   fetchProducts();
-  // };
-
   const syncWithServer = async () => {
     // console.log(productsCRDT.m[0].value);
+    console.log('productsCRDT before: ', productsCRDT);
     productsCRDT.m.forEach((product) => {
       product.shoppingListId = productsCRDT.id;
     }
@@ -242,6 +203,7 @@ const App: React.FC = () => {
         });
         if (mappedResponse !== undefined) {
           setProducts(mappedResponse);
+          productsCRDT.m = mappedResponse;
         }
       })
       .catch((err: Error) => console.log(err));
@@ -257,6 +219,10 @@ const App: React.FC = () => {
           });
           if (mappedResponse !== undefined) {
             shoppingList.m = mappedResponse;
+            if(shoppingList.id === productsCRDT.id) {
+              setProducts(mappedResponse);
+              productsCRDT.m = mappedResponse;
+            }
           }
         })
         .catch((err: Error) => console.log(err));
@@ -294,9 +260,16 @@ const App: React.FC = () => {
     };
 
     try {
+      console.log('formData: ', formData);
+      console.log('productsCRDT: ', productsCRDT);
       productsCRDT.get(formData.key).inc(formData.value.read());
+      const newPE: ProductEntry<string, CCounter> = {
+        key: formData.key,
+        value: productsCRDT.get(formData.key),
+      };
 
-      saveProduct(formData, shoppingList).then(() => {
+
+      saveProduct(newPE, shoppingList).then(() => {
         fetchProducts();
         updateShoppingList(shoppingListToUpdate);
         fetchShoppingLists();

@@ -1,9 +1,46 @@
-import { CCounter } from '../crdts';
+import { CCounter, DotContext, DotKernel } from '../crdts';
 
 export const convertToProductEntry = (product: IProduct): ProductEntry<string, CCounter> => {
+  const context: DotKernel = JSON.parse(product.context as string, customSerializer);
+  let newCC = new CCounter(product.key);
+  if (product.key === 'Pao') {
+    console.log('convertToProductEntry: ', product);
+    console.log('convertToProductEntry: ', context);
+  }
+  if ('entries' in context.c.cc) {
+    const newccEntries = Object.entries(context.c.cc.entries);
+    const ccMap = new Map(newccEntries.map((entry: any) => [entry[1].key, entry[1].value]));
+
+    const mappedCC = Array.from(ccMap).map(([k, v]) => {
+      return { first: k, second: v };
+    });
+
+    // Convert dc to Set
+    const dcSet: any = new Set(context.c.dc);
+    const newdotContext = DotContext.createWithConfig(mappedCC, Array.from(dcSet));
+    if ('entries' in context.ds) {
+      const dots = Object.entries(context.ds.entries);
+      if (product.key === 'milk') {
+        console.log(dots);
+      }
+      const mappedDots = Array.from(dots).map((dot) => {
+        return { first: product.shoppingListId!, second: dot[1].value };
+      });
+      newCC = CCounter.createWithConfig(product.key, newdotContext, mappedDots);
+    }
+
+    return {
+      key: product.key,
+      value: newCC,
+      context: JSON.parse(product.context as string),
+      shoppingListId: product.shoppingListId,
+      collection: product.collection,
+    };
+  }
   return {
     key: product.key,
-    value: new CCounter(product.key).inc(product.value),
+    value: newCC,
+    context: JSON.parse(product.context as string),
     shoppingListId: product.shoppingListId,
     collection: product.collection,
   };
@@ -43,8 +80,6 @@ export function customSerializer(key: string, value: any): any {
 
   return value;
 }
-
-
 
 export function serializeForMongoDB(data: any): any {
   const serialize = (value: any): any => {

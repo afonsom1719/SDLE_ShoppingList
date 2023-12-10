@@ -114,6 +114,10 @@ const addProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('addProduct');
     console.log(req.body);
+    if(req.body.length === 0) {
+      res.status(400).json({ message: 'No products in body' });
+      return;
+    }
     const body: ProductEntry<string, CCounter>[] = req.body;
     console.log('body: ', body[0].value.dk.ds.entries);
     if (body === undefined) {

@@ -1,6 +1,7 @@
 import PouchDB from 'pouchdb';
 import { CCounter, DotContext } from '../crdts';
 import { generateRandomId } from './generateId';
+import { customSerializer } from './typeConversion';
 
 const productDB = new PouchDB('products');
 
@@ -9,20 +10,25 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
   try {
     product.collection = 'products';
     product.shoppingListId = shoppingListName;
+    console.log('product: ', product);
 
     // console.log('product: ', product.key);
     if (product.key === '') {
       throw new Error('Product key cannot be empty');
     }
 
+    const dotK = JSON.stringify(product.value.dk, customSerializer);
+
     // Convert product to IProduct
     const productToSave: IProduct = {
       _id: generateRandomId(),
       key: product.key,
       value: product.value.read(),
+      context: dotK,
       collection: product.collection,
       shoppingListId: product.shoppingListId,
     };
+    console.log('productToSave: ', productToSave);
 
     // Use allDocs with include_docs to get all documents
     const response = await productDB.allDocs({
@@ -45,7 +51,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
       // Document not found
       // console.log('Product not found');
       if (productToSave.value <= 0) {
-        throw new Error('Product quantity must be greater than 0');
+        return true;
       }
       const responsePost = await productDB.post(productToSave);
       return responsePost;
@@ -69,6 +75,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
         _rev: matchingDocProduct._rev,
         key: productToSave.key,
         value: productToSave.value,
+        context: productToSave.context,
         collection: productToSave.collection,
         shoppingListId: productToSave.shoppingListId,
       });
@@ -127,10 +134,6 @@ const getShoppingListContext = async (shoppingListId: string) => {
 const getAllProducts = async (shoppingListId: string) => {
   try {
     const response = await productDB.allDocs({ include_docs: true });
-    // console.log(
-    //   'All Products: ',
-    //   response.rows.map((row) => row.doc)
-    // );
 
     return response.rows
       .map((row) => row.doc as IProduct)

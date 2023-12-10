@@ -29,8 +29,6 @@ class CCounter {
 
   static createWithConfig(id: string, jointContext: DotContext, dots: Pair<string, number>[]): CCounter {
     let ccounter = new CCounter(id, jointContext);
-    console.log('CCounter: ', ccounter);
-    console.log('jointContext: ', jointContext);
     if ('entries' in jointContext.cc) {
       const newccEntries = Object.entries(jointContext.cc.entries);
       const ccMap = new Map(newccEntries.map((entry) => [entry[1].key, entry[1].value]));
@@ -49,26 +47,11 @@ class CCounter {
         const pairDots: Pair<string, number>[] = dots.map((d) => {
           return { first: d.first, second: d.second };
         });
-        console.log(pairDots);
         pairDots.forEach((dot: Pair<string, number>) => {
           ccounter.dk.add(dot.first, dot.second);
         });
       }
 
-      const ccEntries = Array.from(ccounter.dk.c.cc).map(([k, v]) => {
-        return { first: k[0], second: v };
-      });
-
-      // Convert DC entries to the expected type
-      const dcEntries: [string, number][] = Array.from(ccounter.dk.c.dc).map((d) => {
-        return [d[0], d[1]];
-      });
-
-      // Create a new DotContext if CC or DC entries are provided
-      const dotContext = DotContext.createWithConfig(ccEntries, dcEntries);
-
-      // Set the created DotContext to the CCounter
-      ccounter.dk.c = dotContext;
     }
     return ccounter;
   }

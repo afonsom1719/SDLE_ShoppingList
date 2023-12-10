@@ -5,12 +5,14 @@ import { customSerializer } from './utils/typeConversion';
 const baseUrl: string = 'http://localhost:4000';
 
 export const syncProducts = async (shoppingListId: string): Promise<AxiosResponse<ApiDataType>> => {
+
   try {
-    const products: AxiosResponse<ApiDataType> = await axios.get(baseUrl + '/products', {
+    const products: AxiosResponse<ApiDataType> = await axios.get(baseUrl + '/api/products', {
       params: {
         shoppingListId: shoppingListId,
       },
     });
+
 
     console.log('syncProducts: ', products);
     return products;
@@ -22,7 +24,7 @@ export const syncProducts = async (shoppingListId: string): Promise<AxiosRespons
 
 export const getShoppingLists = async (): Promise<AxiosResponse<ApiDataType>> => {
   try {
-    const shoppingLists: AxiosResponse<ApiDataType> = await axios.get(baseUrl + '/shopping-lists');
+    const shoppingLists: AxiosResponse<ApiDataType> = await axios.get(baseUrl + '/api/shopping-lists');
     return shoppingLists;
   } catch (error) {
     console.log(error);
@@ -40,7 +42,7 @@ export const addProducts = async (formData: ProductEntry<string, CCounter>[]): P
     console.log('parsedFormData: ', parsedFormData);
 
     console.log('serializedFormData: ', serializedFormData);
-    const saveProduct: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/add-product', stringifiedFormData, {
+    const saveProduct: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/api/add-product', stringifiedFormData, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -56,7 +58,7 @@ export const addShoppingList = async (formData: IShoppingList): Promise<AxiosRes
   try {
     const stringifiedFormData = JSON.stringify(formData, customSerializer);
     const saveShoppingList: AxiosResponse<ApiDataType> = await axios.post(
-      baseUrl + '/add-shopping-list',
+      baseUrl + '/api/add-shopping-list',
       stringifiedFormData,
       {
         headers: {
