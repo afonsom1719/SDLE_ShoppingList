@@ -1,4 +1,5 @@
 import { DotContext } from "./dotcontext";
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
 
 // Define a generic interface for the dotkernel class
 interface DotKernel {
@@ -33,10 +34,11 @@ interface DotKernel {
 }
 
 // Implement the dotkernel class
+@JsonObject()
 class DotKernel implements DotKernel {
-  ds: Map<[string, number], number>;
-  cbase: DotContext;
-  c: DotContext;
+  @JsonProperty() ds: Map<[string, number], number>; // Map of dots to vals
+  @JsonProperty() cbase: DotContext;
+  @JsonProperty() c: DotContext;
 
   constructor(jointc?: DotContext) {
     this.ds = new Map<[string, number], number>();
@@ -56,17 +58,12 @@ class DotKernel implements DotKernel {
     return output;
   }
 
+  
+
   join(o: DotKernel): void {
     if (this === o) return; // Join is idempotent, but just dont do it.
     // DS
 
-    this.ds.forEach((val, dot) => {
-      if (o.c.dotin(dot) && o.ds.get(dot) !== val) {
-        // other knows dot, must delete here
-        this.ds.delete(dot);
-      }
-    }
-    );
     o.ds.forEach((val, dot) => {
       if (!this.c.dotin(dot) && !this.ds.has(dot)) {
         // If I dont know, import

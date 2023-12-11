@@ -1,14 +1,15 @@
 import { DotKernel } from "./dotkernel";
 import { DotContext } from "./dotcontext";
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
 
-interface Pair<A, B> {
+export interface Pair<A, B> {
   first: A;
   second: B;
 }
-
+@JsonObject()
 class CCounter {
-  private dk: DotKernel; // Dot kernel
-  private id: string;
+  @JsonProperty() public dk: DotKernel; // Dot kernel
+  @JsonProperty() private id: string;
 
   constructor(k?: string, jointc?: DotContext) {
     // Only for deltas and those should not be mutated
@@ -23,6 +24,40 @@ class CCounter {
 
   toString(): string {
     return `CausalCounter:${this.dk}`;
+  }
+
+   static createWithConfig(
+    id?: string,
+    jointContext?: DotContext,
+    dots?: Pair<string, number>[],
+  ): CCounter {
+    const ccounter = new CCounter(id, jointContext);
+
+    // Add dots if provided
+    if (dots) {
+      dots.forEach((dot: Pair<string, number>) => {
+        ccounter.dk.join(ccounter.dk.add(dot.first, dot.second));
+      });
+    }
+
+    const ccEntries = Array.from(ccounter.dk.c.cc).map(([k, v]) => {
+      return { first: k[0], second: v };
+    }
+    );
+
+    // Convert DC entries to the expected type
+    const dcEntries: [string, number][] = Array.from(ccounter.dk.c.dc).map((d) => {
+      return [d[0], d[1]];
+    });
+    
+
+    // Create a new DotContext if CC or DC entries are provided
+    const dotContext = DotContext.createWithConfig(ccEntries, dcEntries);
+
+    // Set the created DotContext to the CCounter
+    ccounter.dk.c = dotContext;
+
+    return ccounter;
   }
 
   inc(val: number = 1): CCounter {

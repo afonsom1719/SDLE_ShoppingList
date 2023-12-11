@@ -1,11 +1,53 @@
-// Autonomous causal context, for context sharing in maps
-class DotContext {
-  public cc: Map<string, number>; // Compact causal context
-  public dc: Set<[string, number]>; // Dot cloud
+import { JsonObject, JsonProperty } from "typescript-json-serializer";
+import { Pair } from "./ccounter";
 
-  constructor() {
-    this.cc = new Map<string, number>();
-    this.dc = new Set<[string, number]>();
+// Autonomous causal context, for context sharing in maps
+@JsonObject()
+class DotContext {
+  @JsonProperty() public cc: Map<string, number>; // Compact causal context
+  @JsonProperty() public dc: Set<[string, number]>; // Dot cloud
+
+  constructor(cc?: Map<string, number>, dc?: Set<[string, number]>) {
+    let ccLocal = cc;
+    let dcLocal = dc;
+    if (typeof cc === 'undefined') {
+      ccLocal = new Map<string, number>();
+    }
+    if (typeof dc === 'undefined') {
+      dcLocal = new Set<[string, number]>();
+    }
+    console.log('DotContext constructor', typeof cc,typeof dc);
+    console.log('DotContext constructor', ccLocal,dcLocal);
+    this.cc = ccLocal!;
+    this.dc = dcLocal!;
+  }
+
+  static createWithConfig(
+    ccEntries?: Pair<string, number>[],
+    dcEntries?: [string, number][],
+  ): DotContext {
+    const dotContext = new DotContext();
+
+    // Add CC entries if provided
+    if (ccEntries) {
+      ccEntries.forEach((entry: Pair<string, number>) => {
+        dotContext.cc.set(entry.first, entry.second);
+      });
+    }
+
+    
+
+    // Add DC entries if provided
+    if (dcEntries) {
+      dcEntries.forEach((entry: [string, number]) => {
+        dotContext.dc.add(entry);
+      });
+    }
+
+    // Compact the created context
+    dotContext.compact();
+
+    return dotContext;
   }
 
   public equals(o: DotContext): boolean {
@@ -23,18 +65,20 @@ class DotContext {
     return true;
   }
 
+  
+
   public toString(): string {
-    let output = "Context:";
-    output += " CC ( ";
+    let output = 'Context:';
+    output += ' CC ( ';
     for (const [k, v] of this.cc) {
-      output += k + ":" + v + " ";
+      output += k + ':' + v + ' ';
     }
-    output += ")";
-    output += " DC ( ";
+    output += ')';
+    output += ' DC ( ';
     for (const [k, v] of this.dc) {
-      output += k + ":" + v + " ";
+      output += k + ':' + v + ' ';
     }
-    output += ")";
+    output += ')';
     return output;
   }
 

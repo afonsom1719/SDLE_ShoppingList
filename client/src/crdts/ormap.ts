@@ -1,17 +1,15 @@
-import { DotContext } from "./dotcontext";
-import { CCounter } from "./ccounter";
-
-
+import { DotContext } from './dotcontext';
+import { CCounter } from './ccounter';
+import { JsonObject, JsonProperty } from 'typescript-json-serializer';
 
 // Define a generic class for the ormap
+@JsonObject()
 export class Ormap {
   // Use an array of MapEntry to store the map data
-  m: Array<ProductEntry<string, CCounter>>;
-
-  // Use the DotContext class to store the causal context
-  cbase: DotContext;
-  c: DotContext;
-  id: string;
+  @JsonProperty() m: Array<ProductEntry<string, CCounter>>; // Use an array of MapEntry to store the map data
+  @JsonProperty() cbase: DotContext; // Use the DotContext class to store the causal context
+  @JsonProperty() c: DotContext;
+  @JsonProperty() id: string;
 
   // Define the constructor with optional parameters
   constructor(i?: string, jointc?: DotContext) {
@@ -36,16 +34,16 @@ export class Ormap {
   }
 
   // Define a method to print the ormap
-  toString(): string {
-    // Use a string variable to store the output
-    let output = "Map:" + this.c.toString() + "\n";
-    // Loop through the map entries and append them to the output
-    for (const kv of this.m) {
-      output += kv.key + "->" + kv.value + "\n";
-    }
-    // Return the output
-    return output;
-  }
+  // toString(): string {
+  //   // Use a string variable to store the output
+  //   let output = "Map:" + this.c.toString() + "\n";
+  //   // Loop through the map entries and append them to the output
+  //   for (const kv of this.m) {
+  //     output += kv.key + "->" + kv.value + "\n";
+  //   }
+  //   // Return the output
+  //   return output;
+  // }
 
   // Define a method to access the map by key
   get(n: string): CCounter {
@@ -108,28 +106,48 @@ export class Ormap {
     return r;
   }
 
-  // Define a method to join the map with another ormap
-  join(o: Ormap): void {  
+  static createWithConfig(id?: string, jointContext?: DotContext, entries?: ProductEntry<string, CCounter>[]): Ormap {
+    const ormap = new Ormap(id, jointContext);
 
-    console.log("Joining: ", this.toString(), " with ", o.toString());
+    // Add entries if provided
+    if (entries) {
+      entries.forEach((product: ProductEntry<string, CCounter>) => {
+        if (typeof product.value === 'number') {
+          const newCC = new CCounter(product.key);
+          newCC.inc(product.value);
+          ormap.m.push({ key: product.key, value: newCC });
+        } else {
+          if("entries" in product.value.dk.ds){
+            const dots = Object.entries(product.value.dk.ds.entries);
+            console.log(dots);
+            const mappedDots = Array.from(dots).map((dot) => {
+              return { first: dot[1].key[0], second: dot[1].value };
+            });
+            const newCC = CCounter.createWithConfig(product.key, product.value.dk.c, mappedDots);
+            ormap.m.push({ key: product.key, value: newCC });
+          }
+        }
+      });
+    }
+
+    return ormap;
+  }
+
+  // Define a method to join the map with another ormap
+  join(o: Ormap): void {
     //Entry at both
     this.m.forEach((kv) => {
-        if (o.m.findIndex((kv2) => kv2.key === kv.key) !== -1) {
-            console.log("Entry in both: ", kv.key);
-            kv.value.join(o.get(kv.key));
-        }
-        });
+      if (o.m.findIndex((kv2) => kv2.key === kv.key) !== -1) {
+        kv.value.join(o.get(kv.key));
+      }
+    });
 
     o.m.forEach((kv) => {
       if (this.m.findIndex((kv2) => kv2.key === kv.key) === -1) {
-        console.log("Entry only at other: ", kv.key);
-        console.log("Creating empty value with context: ", kv.value);
         this.get(kv.key).inc(kv.value.read());
       }
     });
-    
-    // Join the current context with the other context
+
     this.c.join(o.c);
   }
 }
-

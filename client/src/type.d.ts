@@ -2,6 +2,7 @@
 interface ProductEntry<N, V> {
     key: N;
     value: V;
+    context?: string;
     shoppingListId?: string;
     collection?: string = 'products';
   }
@@ -16,6 +17,7 @@ interface IProduct {
     _rev?: string
     key: string
     value: number
+    context?: string;
     createdAt?: string
     updatedAt?: string
     shoppingListId?: string;

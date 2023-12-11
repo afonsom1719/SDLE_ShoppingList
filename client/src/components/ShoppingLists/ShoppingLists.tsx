@@ -2,13 +2,13 @@ import React, { CSSProperties } from 'react';
 // import { getShoppingLists } from '../../API';
 import { Button } from '@material-ui/core';
 import AddShoppingList from './AddShoppingList';
-import { DotContext } from '../../crdts';
+import { DotContext, Ormap } from '../../crdts';
 import TrashButton from '../TrashButton/TrashButton';
 
 interface ShoppingListSelectorProps {
   customStyle: CSSProperties;
-  shoppingLists: string[];
-  currentShoppingList: string;
+  shoppingLists: Ormap[];
+  currentShoppingList: Ormap;
   onShoppingListSelected: (shoppingListId: string) => void;
   onAddShoppingList: (e: React.FormEvent, formData: ShoppingListEntry<string, DotContext>) => void;
   onDeleteShoppingList: (shoppingListId: string) => void;
@@ -40,6 +40,7 @@ const ShoppingListSelector = ({
   //   }
   // };
 
+
   const handleSelectShoppingList = (shoppingListId: string) => {
     onShoppingListSelected(shoppingListId);
     console.log('selected shopping list: ', shoppingListId);
@@ -53,16 +54,16 @@ const ShoppingListSelector = ({
     <div style={customStyle}>
       <h1>Select a shopping list</h1>
       <ul className='customList'>
-        {shoppingLists.map((shoppingList: any) => (
-          <li key={shoppingList}>
+        {shoppingLists.map((shoppingList: Ormap) => (
+          <li key={shoppingList.id}>
             <Button
               variant='contained'
-              style={currentShoppingList !== shoppingList ? { borderRadius: '10px' } : {borderRadius: '10px', backgroundColor: '#ff9900', color: 'white'}}
-              onClick={() => handleSelectShoppingList(shoppingList)}
+              style={currentShoppingList.id !== shoppingList.id ? { borderRadius: '10px' } : {borderRadius: '10px', backgroundColor: '#ff9900', color: 'white'}}
+              onClick={() => handleSelectShoppingList(shoppingList.id)}
             >
-              {shoppingList}
+              {shoppingList.id}
             </Button>
-            <TrashButton onClick={() => handleDeleteShoppingList(shoppingList)} />
+            <TrashButton onClick={() => handleDeleteShoppingList(shoppingList.id)} />
           </li>
         ))}
       </ul>
