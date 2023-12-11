@@ -63,9 +63,12 @@ class DotKernel implements DotKernel {
   join(o: DotKernel): void {
     if (this === o) return; // Join is idempotent, but just dont do it.
     // DS
+    
 
     o.ds.forEach((val, dot) => {
+      console.log("Checking dot: ", dot);
       if (!this.c.dotin(dot) && !this.ds.has(dot)) {
+        console.log('dot: ', dot);
         // If I dont know, import
         this.ds.set(dot, val);
       }

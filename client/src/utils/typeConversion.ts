@@ -24,7 +24,7 @@ export const convertToProductEntry = (product: IProduct): ProductEntry<string, C
         console.log(dots);
       }
       const mappedDots = Array.from(dots).map((dot) => {
-        return { first: product.shoppingListId!, second: dot[1].value };
+        return { first: dot[1].key[0], second: dot[1].value };
       });
       newCC = CCounter.createWithConfig(product.key, newdotContext, mappedDots);
     }
