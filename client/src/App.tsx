@@ -29,13 +29,11 @@ const App: React.FC = () => {
   const isInitialRender = useRef(true);
   let productsCRDT: Ormap = new Ormap(shoppingList);
   productsCRDT.m = products;
-  
+  let newCRDT: Ormap = new Ormap(shoppingList);
 
   useEffect(() => {
     fetchShoppingLists();
   }, []);
-
-   
 
   useEffect(() => {
     if (!isInitialRender.current) {
@@ -61,6 +59,8 @@ const App: React.FC = () => {
     //     productsCRDT.get(product.key).inc(product.value.read());
     //   });
     // }
+    console.log(' useeffecr shopping lists productsCRDT: ', productsCRDT);
+    console.log('products: ', products);
     setIsSynced(false);
   }, [shoppingLists]);
 
@@ -70,11 +70,23 @@ const App: React.FC = () => {
     // if (selectedShoppingList) {
     //   productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
     // }
+    console.log(' single shopping list productsCRDT: ', productsCRDT);
+    console.log('products: ', products);
   }, [shoppingList]);
 
   useEffect(() => {
     setIsSynced(false);
-    productsCRDT.m = products;
+    console.log('products productsCRDT: ', productsCRDT);
+    console.log('products: ', products);
+    const tempShoppingLists: Ormap[] = shoppingLists;
+    tempShoppingLists.forEach((list) => {
+      if (list.id === productsCRDT.id) {
+        list = productsCRDT;
+      }
+    });
+    setShoppingLists(tempShoppingLists);
+    newCRDT = new Ormap(productsCRDT.id, productsCRDT.c);
+    newCRDT.m = productsCRDT.m;
   }, [products]);
 
   const constructModalMessage = (message: string, warnLevel: string): void => {
@@ -94,11 +106,19 @@ const App: React.FC = () => {
 
   const syncWithServer = async () => {
     // console.log(productsCRDT.m[0].value);
-    console.log('productsCRDT before: ', productsCRDT);
-    productsCRDT.m.forEach((product) => {
-      product.shoppingListId = productsCRDT.id;
+    shoppingLists.forEach((list) => {
+      if (list.id === productsCRDT.id) {
+        productsCRDT = list;
+      }
     }
     );
+    console.log('productsCRDT before: ', productsCRDT);
+    console.log('products before: ', products);
+    productsCRDT = new Ormap(newCRDT.id, newCRDT.c);
+    productsCRDT.m = newCRDT.m;
+    productsCRDT.m.forEach((product) => {
+      product.shoppingListId = productsCRDT.id;
+    });
     const response = await syncProducts(productsCRDT.id);
     if (response !== null) {
       if (response.data.message === 'No products in database') {
@@ -113,6 +133,7 @@ const App: React.FC = () => {
         console.log('Answer: ', answer);
         console.log('Shopping list answer: ', shoppingListAnswer);
         setProducts(productsCRDT.m);
+        console.log('productsCRDT before: ', productsCRDT);
       }
 
       if (!('listName' in response.data)) {
@@ -127,7 +148,6 @@ const App: React.FC = () => {
       }
 
       const assertedContext: DotContext = JSON.parse(response.data.context as string);
-
 
       if ('entries' in assertedContext.cc) {
         console.log('assertedContext.cc.entries: ', assertedContext.cc.entries);
@@ -145,18 +165,17 @@ const App: React.FC = () => {
 
         console.log('convertedContext: ', convertedContext);
         console.log('response.data.products: ', response.data.products);
-        const parsedProducts: ProductEntry<string, CCounter>[] = JSON.parse(response.data.products as unknown as string); 
+        const parsedProducts: ProductEntry<string, CCounter>[] = JSON.parse(
+          response.data.products as unknown as string
+        );
         console.log('parsedProducts: ', parsedProducts);
 
-        const newOrmap = Ormap.createWithConfig(
-          response.data.listName as string,
-          convertedContext,
-          parsedProducts
-        );
+        const newOrmap = Ormap.createWithConfig(response.data.listName as string, convertedContext, parsedProducts);
         console.log('newOrmap before: ', newOrmap);
-        productsCRDT.join(newOrmap);
-        console.log('ProductsOrmap after: ', productsCRDT);
-
+        // productsCRDT.join(newOrmap);
+        newOrmap.join(productsCRDT);
+        productsCRDT = newOrmap;
+        console.log('ProductsOrmap after: ', newOrmap);
 
         // Update the database entries and fetch the latest data
         await Promise.all(
@@ -167,7 +186,7 @@ const App: React.FC = () => {
               context: list.c,
               collection: 'shopping-lists',
             });
-        
+
             list.m.forEach(async (product) => {
               const updateResponse = await saveProduct(product, list.id);
               if (updateResponse === null) {
@@ -187,12 +206,13 @@ const App: React.FC = () => {
         };
         const shoppingListAnswer = await addShoppingList(newShoppingList);
         console.log('Shopping list answer: ', shoppingListAnswer);
-        const answer = await addProducts(productsCRDT.m);
-        console.log(answer);
+        if(productsCRDT.m.length > 0 ){
+          const answer = await addProducts(productsCRDT.m);
+          console.log(answer);
+        }
+        setProducts(productsCRDT.m);
       }
     }
-    setProducts(productsCRDT.m);
-
   };
 
   const fetchProducts = (): void => {
@@ -202,8 +222,8 @@ const App: React.FC = () => {
           return convertToProductEntry(product);
         });
         if (mappedResponse !== undefined) {
-          setProducts(mappedResponse);
           productsCRDT.m = mappedResponse;
+          setProducts(mappedResponse);
         }
       })
       .catch((err: Error) => console.log(err));
@@ -219,7 +239,7 @@ const App: React.FC = () => {
           });
           if (mappedResponse !== undefined) {
             shoppingList.m = mappedResponse;
-            if(shoppingList.id === productsCRDT.id) {
+            if (shoppingList.id === productsCRDT.id) {
               setProducts(mappedResponse);
               productsCRDT.m = mappedResponse;
             }
@@ -267,7 +287,6 @@ const App: React.FC = () => {
         key: formData.key,
         value: productsCRDT.get(formData.key),
       };
-
 
       saveProduct(newPE, shoppingList).then(() => {
         fetchProducts();
