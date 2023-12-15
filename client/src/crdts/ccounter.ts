@@ -56,6 +56,10 @@ class CCounter {
     return ccounter;
   }
 
+  generateRandomId(): string {
+    return (Math.random() * 1000000).toString();
+  }
+
   inc(val: number = 1): CCounter {
     let r = new CCounter();
     let dots = new Set<Pair<string, number>>(); // dots to remove, should be only 1
@@ -69,7 +73,7 @@ class CCounter {
       }
     }
     for (let dot of dots) r.dk.join(this.dk.rmv(dot.second));
-    r.dk.join(this.dk.add(this.id, base + val));
+    r.dk.join(this.dk.add(this.generateRandomId(), base + val));
     return r;
   }
 

@@ -14,7 +14,7 @@ export const syncProducts = async (shoppingListId: string): Promise<AxiosRespons
     });
 
 
-    console.log('syncProducts: ', products);
+    // console.log('syncProducts: ', products);
     return products;
   } catch (error) {
     console.log(error);
@@ -37,11 +37,11 @@ export const addProducts = async (formData: ProductEntry<string, CCounter>[]): P
   try {
     const serializedFormData = defaultSerializer.serialize(formData);
     const stringifiedFormData = JSON.stringify(serializedFormData, customSerializer);
-    const parsedFormData = JSON.parse(stringifiedFormData);
-    console.log('stringifiedFormData: ', stringifiedFormData);
-    console.log('parsedFormData: ', parsedFormData);
+    // const parsedFormData = JSON.parse(stringifiedFormData);
+    // console.log('stringifiedFormData: ', stringifiedFormData);
+    // console.log('parsedFormData: ', parsedFormData);
 
-    console.log('serializedFormData: ', serializedFormData);
+    // console.log('serializedFormData: ', serializedFormData);
     const saveProduct: AxiosResponse<ApiDataType> = await axios.post(baseUrl + '/api/add-product', stringifiedFormData, {
       headers: {
         'Content-Type': 'application/json',

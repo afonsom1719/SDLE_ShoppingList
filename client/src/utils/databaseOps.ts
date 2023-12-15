@@ -10,7 +10,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
   try {
     product.collection = 'products';
     product.shoppingListId = shoppingListName;
-    console.log('product: ', product);
+    // console.log('product: ', product);
 
     // console.log('product: ', product.key);
     if (product.key === '') {
@@ -28,7 +28,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
       collection: product.collection,
       shoppingListId: product.shoppingListId,
     };
-    console.log('productToSave: ', productToSave);
+    // console.log('productToSave: ', productToSave);
 
     // Use allDocs with include_docs to get all documents
     const response = await productDB.allDocs({
@@ -91,7 +91,7 @@ const saveProduct = async (product: ProductEntry<string, CCounter>, shoppingList
 const saveShoppingList = async (shoppingList: ShoppingListEntry<string, DotContext>) => {
   try {
     shoppingList.collection = 'shopping-lists';
-    console.log('shoppingList: ', shoppingList);
+    // console.log('shoppingList: ', shoppingList);
     const response = await productDB.post(shoppingList);
     return response;
   } catch (error) {
@@ -179,7 +179,7 @@ const deleteProduct = async (productId: string, shoppingListName: string) => {
 
 const deleteShoppingList = async (shoppingListName: string) => {
   try {
-    console.log('removing: ', shoppingListName);
+    // console.log('removing: ', shoppingListName);
 
     // Use allDocs with include_docs to get all documents
     const response = await productDB.allDocs({
@@ -195,7 +195,7 @@ const deleteShoppingList = async (shoppingListName: string) => {
 
     if (!matchingDoc) {
       // Document not found
-      console.log('Shopping list not found');
+      // console.log('Shopping list not found');
       return null;
     }
 
@@ -279,7 +279,7 @@ const updateShoppingList = async (shoppingList: ShoppingListEntry<string, DotCon
     shoppingListToSave._id = matchingDocProduct._id;
     shoppingListToSave.context = shoppingList.context;
 
-    console.log('shoppingListToSave: ', shoppingListToSave);
+    // console.log('shoppingListToSave: ', shoppingListToSave);
     // console.log('matchingDocProduct: ', matchingDocProduct);
     // console.log('shoppingList: ', shoppingList)
 

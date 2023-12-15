@@ -59,8 +59,6 @@ const App: React.FC = () => {
     //     productsCRDT.get(product.key).inc(product.value.read());
     //   });
     // }
-    console.log(' useeffecr shopping lists productsCRDT: ', productsCRDT);
-    console.log('products: ', products);
     setIsSynced(false);
   }, [shoppingLists]);
 
@@ -70,14 +68,10 @@ const App: React.FC = () => {
     // if (selectedShoppingList) {
     //   productsCRDT = new Ormap(selectedShoppingList.id, selectedShoppingList.c);
     // }
-    console.log(' single shopping list productsCRDT: ', productsCRDT);
-    console.log('products: ', products);
   }, [shoppingList]);
 
   useEffect(() => {
     setIsSynced(false);
-    console.log('products productsCRDT: ', productsCRDT);
-    console.log('products: ', products);
     const tempShoppingLists: Ormap[] = shoppingLists;
     tempShoppingLists.forEach((list) => {
       if (list.id === productsCRDT.id) {
@@ -106,12 +100,6 @@ const App: React.FC = () => {
 
   const syncWithServer = async () => {
     // console.log(productsCRDT.m[0].value);
-    shoppingLists.forEach((list) => {
-      if (list.id === productsCRDT.id) {
-        productsCRDT = list;
-      }
-    }
-    );
     console.log('productsCRDT before: ', productsCRDT);
     console.log('products before: ', products);
     productsCRDT = new Ormap(newCRDT.id, newCRDT.c);
@@ -150,7 +138,7 @@ const App: React.FC = () => {
       const assertedContext: DotContext = JSON.parse(response.data.context as string);
 
       if ('entries' in assertedContext.cc) {
-        console.log('assertedContext.cc.entries: ', assertedContext.cc.entries);
+        // console.log('assertedContext.cc.entries: ', assertedContext.cc.entries);
         const entries = Object.entries(assertedContext.cc.entries);
         const ccEntries: Pair<string, number>[] = Array.from(entries).map(([k, v]) => {
           return { first: k, second: v };
@@ -163,19 +151,20 @@ const App: React.FC = () => {
 
         const convertedContext = DotContext.createWithConfig(ccEntries, dcEntries);
 
-        console.log('convertedContext: ', convertedContext);
-        console.log('response.data.products: ', response.data.products);
+        // console.log('convertedContext: ', convertedContext);
+        // console.log('response.data.products: ', response.data.products);
         const parsedProducts: ProductEntry<string, CCounter>[] = JSON.parse(
           response.data.products as unknown as string
         );
-        console.log('parsedProducts: ', parsedProducts);
+        // console.log('parsedProducts: ', parsedProducts);
 
         const newOrmap = Ormap.createWithConfig(response.data.listName as string, convertedContext, parsedProducts);
         console.log('newOrmap before: ', newOrmap);
-        // productsCRDT.join(newOrmap);
         newOrmap.join(productsCRDT);
-        productsCRDT = newOrmap;
-        console.log('ProductsOrmap after: ', newOrmap);
+        productsCRDT.join(newOrmap);
+        
+        console.log('newOrmap after: ', newOrmap);
+        console.log('ProductsOrmap after: ', productsCRDT);
 
         // Update the database entries and fetch the latest data
         await Promise.all(
@@ -211,6 +200,7 @@ const App: React.FC = () => {
           console.log(answer);
         }
         setProducts(productsCRDT.m);
+        window.location.reload();
       }
     }
   };
