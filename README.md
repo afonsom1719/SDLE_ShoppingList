@@ -18,6 +18,7 @@ The client folder is a react app and the server folder is a node.js app. The ser
 1. Get into the client folder and run `yarn install` or `npm i`
 2. Then run `yarn start` or `npm start`
 3. Do the same thing inside the server folder.
+4. To run the indidual servers do: `node dist/js/serverX.js` (X being the number of the server with in our case is only 1 and 2)
 
 > IMPORTANT: The nodemon.json file currently contains Eduardo Silva's credential to a temporary mongodb database. Later we will need to create one for the team.
 
